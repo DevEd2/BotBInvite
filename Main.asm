@@ -204,14 +204,43 @@ ShowScreen1:
 	ld	hl,Logo1Map
 	ld	de,_SCRN0
 	call	LoadMap
+	ld	a,90
+	ldh	[rSCY],a
 	ld	a,%11100100
 	ldh	[rBGP],a
 	xor	%01110101
 	ldh	[rLCDC],a
 	
+IntroAnimLoop1:
+	halt
+	ldh	a,[rSCY]
+	sub	4
+	ldh	[rSCY],a
+	bit	7,a
+	jr	z,IntroAnimLoop1
+	
+	xor	a
+	ldh	[rSCY],a
+	; start music
+	ld	hl,ScreenShakeTable
+	
+IntroAnimLoop2:
+	halt
+	ld	a,[hl+]
+	ldh	[rSCY],a
+	cp	$80
+	jr	nz,IntroAnimLoop2
+	xor	a
+	ldh	[rSCY],a
+	
 MainLoop
 	halt
 	jr	MainLoop
+	
+ScreenShakeTable:
+	db	3,6,3,0,3,6,3,0,2,5,3,0,2,5,3,0
+	db	2,4,2,0,2,4,2,0,1,3,2,0,1,3,2,0
+	db	1,2,1,0,1,2,1,0,1,1,0,0,1,1,0,0,$80
 
 ; =============
 ; Misc routines
@@ -292,6 +321,12 @@ EmergencyBootROM:
 	
 .exit
 	reti
+	
+; =========
+; Misc data
+; =========
+
+
 
 ; =============
 ; Graphics data
