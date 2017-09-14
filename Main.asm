@@ -191,21 +191,27 @@ ProgramStart:
 StartDemo:
 	ld	a,[ShowLogo]
 	and	a
-	jr	z,MainLoop
+	jr	z,.continue
 	call	EmergencyBootROM
+.continue
+	; pigdevil2010: logo joke goes here
+
+ShowScreen1:
+	halt
+	xor	a
+	ldh	[rLCDC],a	; disable	LCD
+	CopyTileset	Logo1,0,120
+	ld	hl,Logo1Map
+	ld	de,_SCRN0
+	call	LoadMap
+	ld	a,%11100100
+	ldh	[rBGP],a
+	xor	%01110101
+	ldh	[rLCDC],a
 	
-MainLoop:
+MainLoop
 	halt
 	jr	MainLoop
-	
-; =============
-; Graphics data
-; =============
-
-Font:					incbin	"Font.bin"
-
-EmergencyNintendoLogo:	incbin	"GFX/NintendoLogoGFX.bin"
-EmergencyNintendoMap:	incbin	"GFX/NintendoMap.bin"
 
 ; =============
 ; Misc routines
@@ -286,3 +292,15 @@ EmergencyBootROM:
 	
 .exit
 	reti
+
+; =============
+; Graphics data
+; =============
+
+Font:					incbin	"Font.bin"
+
+EmergencyNintendoLogo:	incbin	"GFX/NintendoLogoGFX.bin"
+EmergencyNintendoMap:	incbin	"GFX/NintendoMap.bin"
+
+Logo1:					incbin	"GFX/Logo1.bin"
+Logo1Map:				incbin	"GFX/Logo1Map.bin"
