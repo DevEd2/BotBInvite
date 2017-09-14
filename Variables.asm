@@ -16,6 +16,11 @@ EmuCheck			ds	1	; variable used to determine if we're running in an emulator
 sys_btnPress		ds	1
 sys_btnHold			ds	1
 ShowLogo			ds	1
+VBlankFlag			ds	1
+
+ScrollTablePos		ds	1
+ScrollerXPos		ds	1
+ScrollerPointer		ds	2
 
 ; ================================================================
 ; Project-specific variables

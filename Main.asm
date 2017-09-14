@@ -2,7 +2,6 @@
 ; BotB Invite demo
 ; ================
 
-
 ; ================================================================
 ; Project includes
 ; ================================================================
@@ -17,10 +16,12 @@ include	"hardware.inc"
 ; ================================================================
 
 SECTION	"Reset $00",ROM0[$00]
-Reset00:	ret
-
-SECTION	"Reset $08",ROM0[$08]
-Reset08:	ret
+Reset00:
+	halt
+	ld	a,[VBlankFlag]
+	and	a
+	jr	z,Reset00
+	ret
 
 SECTION	"Reset $10",ROM0[$10]
 Reset10:	ret
@@ -46,11 +47,11 @@ Reset38:	ret
 
 SECTION	"VBlank interrupt",ROM0[$40]
 IRQ_VBlank:
-	reti
+	jp	DoVBlank
 
 SECTION	"LCD STAT interrupt",ROM0[$48]
 IRQ_STAT:
-	reti
+	jp	DoStat
 
 SECTION	"Timer interrupt",ROM0[$50]
 IRQ_Timer:
@@ -108,7 +109,7 @@ ProgramStart:
 	di
 	
 	call	ClearWRAM
-	ld	a,IEF_VBLANK
+	ld	a,IEF_VBLANK+IEF_LCDC
 	ldh	[rIE],a
 	ei
 	
@@ -200,15 +201,20 @@ ShowScreen1:
 	halt
 	xor	a
 	ldh	[rLCDC],a	; disable	LCD
-	CopyTileset	Logo1,0,120
+	CopyTileset			Logo1,0,120
+	CopyTileset			StarTiles,$1000,5
+	CopyTilesetInverted	Font,$800,64
 	ld	hl,Logo1Map
 	ld	de,_SCRN0
 	call	LoadMap
-	ld	a,90
+	ld	a,90		; a = 01011010
 	ldh	[rSCY],a
-	ld	a,%11100100
+	xor	%10111110	; a = 11100100
 	ldh	[rBGP],a
-	xor	%01110101
+	ldh	[rOBP0],a
+	cpl				; a = 00011011
+	ldh	[rOBP1],a
+	xor	%10001010	; a = 10010001
 	ldh	[rLCDC],a
 	
 IntroAnimLoop1:
@@ -221,7 +227,7 @@ IntroAnimLoop1:
 	
 	xor	a
 	ldh	[rSCY],a
-	; start music
+	; start music here
 	ld	hl,ScreenShakeTable
 	
 IntroAnimLoop2:
@@ -233,14 +239,17 @@ IntroAnimLoop2:
 	xor	a
 	ldh	[rSCY],a
 	
-MainLoop
-	halt
-	jr	MainLoop
+	ld	a,88		; a = 01011000
+	ldh	[rLYC],a
+	xor	%00011000	; a = 01000000
+	ldh	[rSTAT],a
 	
-ScreenShakeTable:
-	db	3,6,3,0,3,6,3,0,2,5,3,0,2,5,3,0
-	db	2,4,2,0,2,4,2,0,1,3,2,0,1,3,2,0
-	db	1,2,1,0,1,2,1,0,1,1,0,0,1,1,0,0,$80
+MainLoop:
+	xor	a
+	ldh	[rSCX],a
+	ldh	[rSCY],a
+	rst	$00			; wait for VBlank
+	jr	MainLoop
 
 ; =============
 ; Misc routines
@@ -326,8 +335,98 @@ EmergencyBootROM:
 ; Misc data
 ; =========
 
+ScreenShakeTable:
+	db	3,6,3,0,3,6,3,0,2,5,3,0,2,5,3,0
+	db	2,4,2,0,2,4,2,0,1,3,2,0,1,3,2,0
+	db	1,2,1,0,1,2,1,0,1,1,1,0,1,1,0,0,$80
+	
+ScrollerBounceTable:
+	db	48,49,50,52,53,54,55,56,57,59,60,61,62,63,64,65
+	db	66,67,69,70,71,72,73,74,75,76,77,78,78,79,80,81
+	db	82,83,84,84,85,86,87,87,88,89,89,90,90,91,91,92
+	db	92,93,93,94,94,94,95,95,95,95,95,96,96,96,96,96
+	db	96,96,96,96,96,96,95,95,95,95,95,94,94,94,93,93
+	db	92,92,91,91,90,90,89,89,88,87,87,86,85,84,84,83
+	db	82,81,80,79,78,78,77,76,75,74,73,72,71,70,69,67
+	db	66,65,64,63,62,61,60,59,57,56,55,54,53,52,50,49
+	db	$ff
+	
+; ==================
+; Interrupt routines
+; ==================
 
+DoVBlank:
+	ld	a,1
+	ld	[VBlankFlag],a
+	reti
 
+DoStat:
+	call	WaitStat
+	ld	a,[ScrollTablePos]
+	inc	a
+	ld	[ScrollTablePos],a
+.restart
+	ld	hl,ScrollerBounceTable
+	add	l
+	ld	l,a
+	jr	nz,.nocarry
+	inc	h
+.nocarry
+	ld	a,[hl+]
+	cp	$ff
+	jr	nz,.noloop
+	xor	a
+	ld	[ScrollTablePos],a
+	jr	.restart
+.noloop
+	add	208
+	ldh	[rSCY],a
+	ld	a,[ScrollerXPos]
+	inc	a
+	ld	[ScrollerXPos],a
+	ldh	[rSCX],a
+	xor	a
+	ld	[VBlankFlag],a
+	reti
+
+; =================
+; Graphics routines
+; =================
+
+_CopyTileset:
+	ld	a,[hl+]
+	ld	[de],a
+	inc	de
+	dec	bc
+	ld	a,b
+	or	c
+	jr	nz,_CopyTileset
+	ret
+	
+_CopyTileset1BPP:
+	ld	a,[hl+]			; get tile
+	ld	[de],a			; write tile
+	inc	de				; increment destination address
+	ld	[de],a			; write tile again
+	inc	de				; increment destination address again
+	dec	bc
+	dec	bc				; since we're copying two tiles, we need to dec bc twice
+	ld	a,b
+	or	c
+	jr	nz,_CopyTileset1BPP
+	ret
+	
+_CopyTilesetInverted
+	ld	a,[hl+]
+	cpl
+	ld	[de],a
+	inc	de
+	dec	bc
+	ld	a,b
+	or	c
+	jr	nz,_CopyTilesetInverted
+	ret
+	
 ; =============
 ; Graphics data
 ; =============
@@ -339,3 +438,5 @@ EmergencyNintendoMap:	incbin	"GFX/NintendoMap.bin"
 
 Logo1:					incbin	"GFX/Logo1.bin"
 Logo1Map:				incbin	"GFX/Logo1Map.bin"
+
+StarTiles:				incbin	"GFX/StarTiles.bin"
