@@ -5,7 +5,7 @@
 if !def(incVars)
 incVars	set	1
 
-SECTION	"Variables",BSS
+SECTION	"Variables",WRAM0
 
 ; ================================================================
 ; Global variables
