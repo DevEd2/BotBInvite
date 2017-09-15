@@ -409,6 +409,9 @@ MainLoop::
 	ret
 	
 .acb
+; since this case is only encountered when c is completely
+; behind a and b, the loaded e value will never have 11 in it
+; and b's LYC position is adjusted instead
 	ld	a,b
 	ld	[rLYC],a
 	ld	a,d
@@ -418,7 +421,7 @@ MainLoop::
 	ld	e,%00001001
 	cp	c
 	jr	z,.acbdone
-	ld	e,%00111001	; actually abc, edge-case hack
+	ld	e,%00001001
 	jr	.acbdone
 .ab
 	cp	c
@@ -427,9 +430,9 @@ MainLoop::
 .acbdone
 	ld	a,b
 	add	8
-	cp	d
+	cp	c
 	ret	c
-	ld	d,a
+	ld	c,a
 	ret
 	
 .bac
