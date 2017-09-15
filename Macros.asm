@@ -12,38 +12,29 @@ incMacros	set	1
 ; Copy a tileset to a specified VRAM address.
 ; USAGE: CopyTileset [tileset],[VRAM address],[number of tiles to copy]
 ; "tiles" refers to any tileset.
-CopyTileset:	macro
+CopyTileset:			macro
 	ld	bc,$10*\3		; number of tiles to copy
 	ld	hl,\1			; address of tiles to copy
 	ld	de,$8000+\2		; address to copy to
-.loop
-	ld	a,[hl+]
-	ld	[de],a
-	inc	de
-	dec	bc
-	ld	a,b
-	or	c
-	jr	nz,.loop
+	call	_CopyTileset
+	endm
+	
+; Same as CopyTileset, but inverts the tileset
+CopyTilesetInverted:	macro
+	ld	bc,$10*\3		; number of tiles to copy
+	ld	hl,\1			; address of tiles to copy
+	ld	de,$8000+\2		; address to copy to
+	call	_CopyTilesetInverted
 	endm
 	
 ; Copy a 1BPP tileset to a specified VRAM address.
 ; USAGE: CopyTileset1BPP [tileset],[VRAM address],[number of tiles to copy]
 ; "tiles" refers to any tileset.
-CopyTileset1BPP:	macro
+CopyTileset1BPP:		macro
 	ld	bc,$10*\3		; number of tiles to copy
 	ld	hl,\1			; address of tiles to copy
 	ld	de,$8000+\2		; address to copy to
-.loop
-	ld	a,[hl+]			; get tile
-	ld	[de],a			; write tile
-	inc	de				; increment destination address
-	ld	[de],a			; write tile again
-	inc	de				; increment destination address again
-	dec	bc
-	dec	bc				; since we're copying two tiles, we need to dec bc twice
-	ld	a,b
-	or	c
-	jr	nz,.loop
+	call	_CopyTileset1BPP
 	endm
 
 ; ================================================================
