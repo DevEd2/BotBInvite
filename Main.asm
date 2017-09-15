@@ -228,7 +228,7 @@ endr
 	db	"                    "
 	db	"PRESS A TO CONTINUE."
 	
-StartDemo:
+StartDemo::
 	ld	a,[ShowLogo]
 	and	a
 	jr	z,.continue
@@ -236,7 +236,7 @@ StartDemo:
 .continue
 	; pigdevil2010: logo joke goes here
 
-ShowScreen1:
+ShowScreen1::
 	halt
 	di
 	xor	a
@@ -267,7 +267,7 @@ ShowScreen1:
 	xor	%10001010	; a = 10010001
 	ldh	[rLCDC],a
 	
-IntroAnimLoop1:
+IntroAnimLoop1::
 	halt
 	ldh	a,[rSCY]
 	sub	4
@@ -280,7 +280,7 @@ IntroAnimLoop1:
 	; start music here
 	ld	hl,ScreenShakeTable
 	
-IntroAnimLoop2:
+IntroAnimLoop2::
 	halt
 	ld	a,[hl+]
 	ldh	[rSCY],a
@@ -288,23 +288,268 @@ IntroAnimLoop2:
 	jr	nz,IntroAnimLoop2
 	xor	a
 	ldh	[rSCY],a
-	
-	ld	a,88		; a = 01011000
+	ld	a,$ff
 	ldh	[rLYC],a
-	xor	%00011000	; a = 01000000
+	ld	a,STATF_LYC
 	ldh	[rSTAT],a
 	
-MainLoop:
+	ld	a,6
+	ld	[Scroll2Delay],a
+	ld	a,12
+	ld	[Scroll3Delay],a
+	
+MainLoop::
+	rst	$00			; wait for VBlank
 	xor	a
 	ldh	[rSCX],a
 	ldh	[rSCY],a
-	rst	$00			; wait for VBlank
+	ld	[VBlankFlag],a
+	ld	a,%11100100
+	ld	[rBGP],a
+	ld	hl,Scroll1
+	call	UpdateScroller
+	ld	b,a
+	ld	c,135
+	ld	d,c
+	
+	ld	a,[Scroll2Delay]
+	dec	a
+	jr	nz,.skip
+	ld	hl,Scroll2
+	call	UpdateScroller
+	ld	c,a
+	ld	a,1
+.skip
+	ld	[Scroll2Delay],a
+	
+	ld	a,[Scroll3Delay]
+	dec	a
+	jr	nz,.skip2
+	ld	hl,Scroll3
+	call	UpdateScroller
+	ld	d,a
+	ld	a,1
+.skip2
+	ld	[Scroll3Delay],a
+	
+; sort which line comes first
+	ld	e,0
+	ld	a,b
+	cp	c
+	rl	e
+	cp	d
+	rl	e
+	ld	a,c
+	cp	d
+	rl	e
+	ld	a,d
+	ld	d,0
+	ld	hl,.states
+	add	hl,de
+	add	hl,de
+	ld	e,d
+	ld	d,a
+	ld	a,[hli]
+	ld	h,[hl]
+	ld	l,a
+	call _hl_
+	
+	ld	hl,ScrollLYCTable
+	ld	a,b
+	ld	[hl+],a
+	ld	a,c
+	ld	[hl+],a
+	ld	a,d
+	ld	[hl+],a
+	ld	a,e
+	ld	[CurScrollId],a
+	
+.loop
+	halt
+	ld	a,[CurScrollId]
+	and	a
+	jr	nz,.loop
 	jr	MainLoop
+
+; adjust the LYC values so they overlap correctly
+	
+.states
+	dw	.cba,.bca,.bac,.bac,.cab,.cab,.acb,.abc
+	
+.abc
+	ld	a,b
+	ld	[rLYC],a
+	ld	a,c
+	cp	b
+	ld	e,%00000001
+	jr	z, .ac
+	ld	e,%00001001
+	cp	d
+	jr	z,.abcdone
+	ld	e,%00111001
+	jr	.abcdone
+.ac
+	cp	d
+	jr	z,.abcdone
+	ld	e,%00001101
+.abcdone
+	ld	a,b
+	add	8
+	cp	c
+	jr	c,.abcnoadjb
+	ld	l,a
+.abcnoadjb
+	ld	a,c
+	add	8
+	cp	d
+	jr	c,.abcnoadjc
+	ld	d,a
+.abcnoadjc
+	ld	c,l
+	ret
+	
+.acb
+	ld	a,b
+	ld	[rLYC],a
+	ld	a,d
+	cp	b
+	ld	e,%00000001
+	jr	z,.ab
+	ld	e,%00001001
+	cp	c
+	jr	z,.acbdone
+	ld	e,%00111001	; actually abc, edge-case hack
+	jr	.acbdone
+.ab
+	cp	c
+	jr	z,.acbdone
+	ld	e,%00001001
+.acbdone
+	ld	a,b
+	add	8
+	cp	d
+	ret	c
+	ld	d,a
+	ret
+	
+.bac
+	ld	a,c
+	ld	[rLYC],a
+	ld	a,b
+	cp	c
+	ld	e,%00000001
+	jr	z,.bc
+	ld	e,%00000110
+	cp	d
+	jr	z,.bacdone
+	ld	e,%00110110
+	jr	.bacdone
+.bc
+	cp	d
+	jr	z,.bacdone
+	ld	e,%00001101
+.bacdone
+	ld	a,b
+	add	8
+	cp	d
+	ret c
+	ld	d,a
+	ret
+
+.bca
+	ld	a,c
+	ld	[rLYC],a
+	ld	a,d
+	cp	c
+	ld	e,%00000001
+	jr	z,.ba
+	ld	e,%00000110
+	cp	b
+	jr	z,.bcadone
+	ld	e,%00011110
+	jr	.bcadone
+.ba
+	cp	b
+	jr	z,.bcadone
+	ld	e,%00000110
+.bcadone
+	ld	a,c
+	add	8
+	cp	d
+	ret c
+	ld	d,a
+	ret
+	
+.cab
+	ld	a,d
+	ld	[rLYC],a
+	ld	a,b
+	cp	d
+	ld	e,%00000001
+	jr	z,.cb
+	ld	e,%00000111
+	cp	c
+	jr	z,.cabdone
+	ld	e,%00100111
+	jr	.cabdone
+.cb
+	cp	c
+	jr	z,.cabdone
+	ld	e,%00001001
+.cabdone
+	ld	a,b
+	add	8
+	cp	c
+	ret c
+	ld	c,a
+	ret
+	
+.cba
+	ld	a,d
+	ld	[rLYC],a
+	ld	a,c
+	cp	d
+	ld	e,%00000001
+	jr	z, .ca
+	ld	e,%00000111
+	cp	b
+	ret z
+	ld	e,%00011011
+	ret
+.ca
+	cp	b
+	ret z
+	ld	e,%00000110
+	ret
+	
+UpdateScroller:
+; returns a line number to update this scroller
+	ld	a,[hl]	; \1TablePos
+	inc	a
+	and	$7f
+	ld	[hli],a
+	inc	[hl]	; \1XPos
+	inc	hl
+	push	hl
+	add ScrollerBounceTable % $100
+	ld	l,a
+	ld	h,ScrollerBounceTable / $100
+	jr	nc,.nocarry
+	inc	h
+.nocarry
+	ld	a,[hl]
+	pop	hl
+	ld	[hl],a	; \1YPos
+	ld	a,135
+	sub	[hl]
+	ret
 
 ; =============
 ; Misc routines
 ; =============
 
+_hl_:
+	jp	hl
 
 _Fill:
 	inc	b
@@ -428,15 +673,14 @@ ScreenShakeTable:
 	db	1,2,1,0,1,2,1,0,1,1,1,0,1,1,0,0,$80
 	
 ScrollerBounceTable:
-	db	48,49,50,52,53,54,55,56,57,59,60,61,62,63,64,65
-	db	66,67,69,70,71,72,73,74,75,76,77,78,78,79,80,81
-	db	82,83,84,84,85,86,87,87,88,89,89,90,90,91,91,92
-	db	92,93,93,94,94,94,95,95,95,95,95,96,96,96,96,96
-	db	96,96,96,96,96,96,95,95,95,95,95,94,94,94,93,93
-	db	92,92,91,91,90,90,89,89,88,87,87,86,85,84,84,83
-	db	82,81,80,79,78,78,77,76,75,74,73,72,71,70,69,67
-	db	66,65,64,63,62,61,60,59,57,56,55,54,53,52,50,49
-	db	$ff
+	db	 0, 1, 2, 4, 5, 6, 7, 8, 9,11,12,13,14,15,16,17
+	db	18,19,21,22,23,24,25,26,27,28,29,30,30,31,32,33
+	db	34,35,36,36,37,38,39,39,40,41,41,42,42,43,43,44
+	db	45,45,45,46,46,46,47,47,47,47,47,48,48,48,48,48
+	db	48,48,48,48,48,48,47,47,47,47,47,46,46,46,46,45
+	db	44,44,43,43,42,42,41,41,40,39,39,38,37,36,36,35
+	db	34,33,32,31,30,30,29,28,27,26,25,24,23,22,21,19
+	db	18,17,16,15,14,13,12,11, 9, 8, 7, 6, 5, 4, 2, 1
 	
 ; ==================
 ; Interrupt routines
@@ -448,32 +692,54 @@ DoVBlank:
 	reti
 
 DoStat:
-	call	WaitStat
-	ld	a,[ScrollTablePos]
-	inc	a
-	ld	[ScrollTablePos],a
-.restart
-	ld	hl,ScrollerBounceTable
-	add	l
+	ld	a,[rSTAT]
+	and	%00000100
+	jr	z,.notlyc
+	ld	a,[CurScrollId]
+	push	af
+	srl	a
+	srl	a
+	ld	[CurScrollId],a
+	and	3
+	dec	a
+	add	ScrollLYCTable % $100
 	ld	l,a
+	ld	h,ScrollLYCTable / $100
 	jr	nc,.nocarry
 	inc	h
 .nocarry
-	ld	a,[hl+]
-	cp	$ff
-	jr	nz,.noloop
-	xor	a
-	ld	[ScrollTablePos],a
-	jr	.restart
-.noloop
-	add	208
-	ldh	[rSCY],a
-	ld	a,[ScrollerXPos]
-	inc	a
-	ld	[ScrollerXPos],a
-	ldh	[rSCX],a
-	xor	a
-	ld	[VBlankFlag],a
+	ld	a,[hl]
+	ld	[rLYC],a
+
+	pop	af
+	and	3
+	dec	a
+	jr	z,.one
+	dec	a
+	jr	z,.two
+	ld	a,[Scroll3XPos]
+	ld	b,a
+	ld	a,[Scroll3YPos]
+	ld	c,%11111110
+	jr	.done
+.one
+	ld	a,[Scroll1XPos]
+	ld	b,a
+	ld	a,[Scroll1YPos]
+	ld	c,%11100100
+	jr	.done
+.two
+	ld	a,[Scroll2XPos]
+	ld	b,a
+	ld	a,[Scroll2YPos]
+	ld	c,%11111001
+.done
+	ld	[rSCY],a
+	ld	a,b
+	ld	[rSCX],a
+	ld	a,c
+	ld	[rBGP],a
+.notlyc
 	reti
 DoStatEnd
 
