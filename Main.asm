@@ -352,7 +352,7 @@ MainLoop::
 	ld	a,[hli]
 	ld	h,[hl]
 	ld	l,a
-	call _hl_
+	call	_hl_
 	
 	ld	hl,ScrollLYCTable
 	ld	a,b
@@ -452,7 +452,7 @@ MainLoop::
 	ld	a,b
 	add	8
 	cp	d
-	ret c
+	ret	c
 	ld	d,a
 	ret
 
@@ -476,7 +476,7 @@ MainLoop::
 	ld	a,c
 	add	8
 	cp	d
-	ret c
+	ret	c
 	ld	d,a
 	ret
 	
@@ -500,7 +500,7 @@ MainLoop::
 	ld	a,b
 	add	8
 	cp	c
-	ret c
+	ret	c
 	ld	c,a
 	ret
 	
@@ -513,12 +513,12 @@ MainLoop::
 	jr	z, .ca
 	ld	e,%00000111
 	cp	b
-	ret z
+	ret	z
 	ld	e,%00011011
 	ret
 .ca
 	cp	b
-	ret z
+	ret	z
 	ld	e,%00000110
 	ret
 	
@@ -531,7 +531,7 @@ UpdateScroller:
 	inc	[hl]	; \1XPos
 	inc	hl
 	push	hl
-	add ScrollerBounceTable % $100
+	add	ScrollerBounceTable % $100
 	ld	l,a
 	ld	h,ScrollerBounceTable / $100
 	jr	nc,.nocarry
