@@ -234,6 +234,9 @@ StartDemo::
 	jr	z,.continue
 	call	EmergencyBootROM
 .continue
+	xor	a
+	call	DS_Init
+
 	; pigdevil2010: logo joke goes here
 
 ShowScreen1::
@@ -277,7 +280,6 @@ IntroAnimLoop1::
 	
 	xor	a
 	ldh	[rSCY],a
-	; start music here
 	ld	hl,ScreenShakeTable
 	
 IntroAnimLoop2::
@@ -312,6 +314,8 @@ IntroAnimLoop2::
 	ld	[ScrollerTextTimer],a
 	
 MainLoop::
+	; TODO: Find a place where DevSound can safely be updated.
+	; Either that, or DevSound will need some major optimization...
 	rst	$00			; wait for VBlank
 	xor	a
 	ldh	[rSCX],a
@@ -319,6 +323,7 @@ MainLoop::
 	ld	[VBlankFlag],a
 	ld	a,%11100100
 	ld	[rBGP],a
+	
 	ld	hl,Scroll1
 	call	UpdateScroller
 	ld	b,a
@@ -381,10 +386,8 @@ MainLoop::
 	halt
 	ld	a,[CurScrollId]
 	and	a
-	jr	nz,.loop
-	
+	jr	nz,.loop	
 	call	UpdateScrollerText
-	
 	jr	MainLoop
 
 ; adjust the LYC values so they overlap correctly
@@ -867,10 +870,15 @@ GFXBlock:
 
 Font:					incbin	"Font.bin"
 
-BootROMRegisteredGFX:
-db	$3c,$42,$b9,$a5,$b9,$a5,$42,$3c
+BootROMRegisteredGFX:	db	$3c,$42,$b9,$a5,$b9,$a5,$42,$3c
 
 Logo1:					incbin	"GFX/Logo1.bin"
 Logo1Map:				incbin	"GFX/Logo1Map.bin"
 
 StarTiles:				incbin	"GFX/StarTiles.bin"
+
+; ========
+; DevSound
+; ========
+
+include	"DevSound.asm"
