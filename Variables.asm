@@ -26,6 +26,9 @@ ScrollTablePos::	ds	1
 ScrollerXPos::		ds	1
 ScrollerPointer::	ds	2
 
+; temp, not needed after logo screen
+EmergencyNintendoLogo::	ds	$190
+
 ; ================================================================
 ; Project-specific variables
 ; ================================================================

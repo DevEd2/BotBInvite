@@ -109,14 +109,30 @@ ProgramStart:
 	di
 	call	ClearWRAM
 	ld	a,RETI_OP	; reti
-	ld	[VBlank], a
-	ld	[LCDStat], a
+	ld	[VBlank],a
+	ld	[LCDStat],a
 	ld	a,IEF_VBLANK
 	ldh	[rIE],a
 	ei
 	
+	; unpack Nintendo logo from cartridge header
+	ld	hl,EmergencyNintendoLogo
+	ld	de,NintendoLogo
+	ld	b,48
+.unpackloop
+	ld	a,[de]
+	inc	de
+	push	de
+	ld	e,a
+	call	.scalelogo
+	swap	e
+	call	.scalelogo
+	pop	de
+	dec	b
+	jr	nz,.unpackloop
+	
 	; check for Nintendo logo in VRAM
-	ld	hl,EmergencyNintendoLogo+$10
+	ld	hl,EmergencyNintendoLogo
 	ld	de,$8000+$10
 	ld	c,$10
 .logoloop
@@ -170,7 +186,27 @@ ProgramStart:
 	bit	btnA,a
 	jp	nz,StartDemo
 	halt
-	jr	.waitforbutton	
+	jr	.waitforbutton
+	
+.scalelogo
+	xor	a
+	ld	d,4
+	ld	c,e
+.scalelogoloop
+	rlca
+	rlca
+	sla	c
+	jr	nc,.scalelogoskip
+	add	3
+.scalelogoskip
+	dec	d
+	jr	nz,.scalelogoloop
+rept 2
+	ld	[hl+],a
+	ld	[hl],0
+	inc	hl
+endr
+	ret
 	
 .gbctext
 	db	"    ! WARNING !     "
@@ -269,6 +305,21 @@ MainLoop:
 ; Misc routines
 ; =============
 
+
+_Fill:
+	inc	b
+	inc	c
+	dec	c
+	jr	nz,.loop
+	dec	b
+.loop
+	ld	[hl+],a
+	dec	c
+	jr	nz,.loop
+	dec	b
+	jr	nz,.loop
+	ret
+
 _CopyBytes:
 	inc	b
 	inc	c
@@ -276,7 +327,7 @@ _CopyBytes:
 	jr	nz,.loop
 	dec	b
 .loop
-	ld	a,[hli]
+	ld	a,[hl+]
 	ld	[de],a
 	inc	de
 	dec	c
@@ -291,18 +342,24 @@ EmergencyBootROM:
 	ldh	[rLCDC],a
 	
 	call	ClearVRAM
-	
-	CopyTileset	EmergencyNintendoLogo,0,$1a
-	
-	ld	hl,EmergencyNintendoMap
-	ld	de,$9904
-	ld	b,$2c
-.copyloop
-	ld	a,[hl+]
-	ld	[de],a
+	CopyTileset		EmergencyNintendoLogo,$10,$18
+	ld	hl,$8190
+	ld	de,BootROMRegisteredGFX
+	ld	b,8
+.loop
+	ld	a,[de]
 	inc	de
+	ld	[hl+],a
+	xor	a
+	ld	[hl+],a
 	dec	b
-	jr	nz,.copyloop
+	jr	nz,.loop
+	
+	ld	a,1
+	bgcoord	hl,4,8
+	lb	bc,2,12
+	call	GFXBlock
+	ld	[$9910],a
 	
 	ld	a,%000001100
 	ldh	[rBGP],a
@@ -399,7 +456,7 @@ DoStat:
 	ld	hl,ScrollerBounceTable
 	add	l
 	ld	l,a
-	jr	nz,.nocarry
+	jr	nc,.nocarry
 	inc	h
 .nocarry
 	ld	a,[hl+]
@@ -447,7 +504,7 @@ _CopyTileset1BPP:
 	jr	nz,_CopyTileset1BPP
 	ret
 	
-_CopyTilesetInverted
+_CopyTilesetInverted:
 	ld	a,[hl+]
 	cpl
 	ld	[de],a
@@ -458,14 +515,30 @@ _CopyTilesetInverted
 	jr	nz,_CopyTilesetInverted
 	ret
 	
+GFXBlock:
+	push	bc
+	push	hl
+.loop
+	ld	[hl+],a
+	inc	a
+	dec	c
+	jr	nz,.loop
+	pop	hl
+	ld	bc,32
+	add	hl,bc
+	pop	bc
+	dec	b
+	jr	nz, GFXBlock
+	ret
+	
 ; =============
 ; Graphics data
 ; =============
 
 Font:					incbin	"Font.bin"
 
-EmergencyNintendoLogo:	incbin	"GFX/NintendoLogoGFX.bin"
-EmergencyNintendoMap:	incbin	"GFX/NintendoMap.bin"
+BootROMRegisteredGFX:
+db	$3c,$42,$b9,$a5,$b9,$a5,$42,$3c
 
 Logo1:					incbin	"GFX/Logo1.bin"
 Logo1Map:				incbin	"GFX/Logo1Map.bin"

@@ -9,6 +9,25 @@ incMacros	set	1
 ; Global macros
 ; ================================================================
 
+lb: macro
+	ld \1, (\2 & $ff) << 8 + (\3 & $ff)
+endm
+
+bgcoord: macro
+if _NARG >= 4
+	ld \1, \3 * $20 + \2 + \4
+else
+	ld \1, \3 * $20 + \2 + $9800
+endc
+endm
+
+Fill:				macro
+	ld	a,\1
+	ld	hl,\2
+	ld	bc,\3
+	call	_Fill
+	endm
+
 CopyBytes:				macro
 	ld	hl,\1
 	ld	de,\2
