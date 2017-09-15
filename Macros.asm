@@ -9,6 +9,13 @@ incMacros	set	1
 ; Global macros
 ; ================================================================
 
+CopyBytes:				macro
+	ld	hl,\1
+	ld	de,\2
+	ld	bc,\3
+	call	_CopyBytes
+	endm
+
 ; Copy a tileset to a specified VRAM address.
 ; USAGE: CopyTileset [tileset],[VRAM address],[number of tiles to copy]
 ; "tiles" refers to any tileset.

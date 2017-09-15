@@ -11,16 +11,20 @@ SECTION	"Variables",WRAM0
 ; Global variables
 ; ================================================================
 
-sys_RNGSeed			ds	1
-EmuCheck			ds	1	; variable used to determine if we're running in an emulator
-sys_btnPress		ds	1
-sys_btnHold			ds	1
-ShowLogo			ds	1
-VBlankFlag			ds	1
+Sprites::			ds  160
+VBlank::			ds  3
+LCDStat::			ds  93	; currently padded to $c100 
 
-ScrollTablePos		ds	1
-ScrollerXPos		ds	1
-ScrollerPointer		ds	2
+sys_RNGSeed::		ds	1
+EmuCheck::			ds	1	; variable used to determine if we're running in an emulator
+sys_btnPress::		ds	1
+sys_btnHold::		ds	1
+ShowLogo::			ds	1
+VBlankFlag::		ds	1
+
+ScrollTablePos::	ds	1
+ScrollerXPos::		ds	1
+ScrollerPointer::	ds	2
 
 ; ================================================================
 ; Project-specific variables
@@ -32,7 +36,7 @@ ScrollerPointer		ds	2
 
 SECTION "Temporary register storage space",HRAM
 
-OAM_DMA				ds	8
+OAM_DMA::			ds	10
 tempAF				ds	2
 tempBC				ds	2
 tempDE				ds	2

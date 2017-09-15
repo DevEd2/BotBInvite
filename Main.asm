@@ -47,11 +47,11 @@ Reset38:	ret
 
 SECTION	"VBlank interrupt",ROM0[$40]
 IRQ_VBlank:
-	jp	DoVBlank
+	jp	VBlank
 
 SECTION	"LCD STAT interrupt",ROM0[$48]
 IRQ_STAT:
-	jp	DoStat
+	jp	LCDStat
 
 SECTION	"Timer interrupt",ROM0[$50]
 IRQ_Timer:
@@ -107,9 +107,11 @@ ROMChecksum:	ds	2					; ROM checksum (2 bytes) (handled by post-linking tool)
 ProgramStart:
 	push	af
 	di
-	
 	call	ClearWRAM
-	ld	a,IEF_VBLANK+IEF_LCDC
+	ld	a,RETI_OP	; reti
+	ld	[VBlank], a
+	ld	[LCDStat], a
+	ld	a,IEF_VBLANK
 	ldh	[rIE],a
 	ei
 	
@@ -121,9 +123,10 @@ ProgramStart:
 	ld	a,[hl+]
 	ld	b,a
 	; wait for VRAM accessibility, otherwise we may get incorrect data
+.wait2
 	ldh	a,[rSTAT]
 	and	2
-	jr	nz,@-4
+	jr	nz,.wait2
 	ld	a,[de]
 	inc	de
 	cp	b
@@ -199,8 +202,19 @@ StartDemo:
 
 ShowScreen1:
 	halt
+	di
 	xor	a
 	ldh	[rLCDC],a	; disable	LCD
+	ld	a,JP_OP
+	ld	[VBlank],a
+	ld	a,DoVBlank % $100
+	ld	[VBlank+1],a
+	ld	a,DoVBlank / $100
+	ld	[VBlank+2],a
+	CopyBytes	DoStat,LCDStat,DoStatEnd-DoStat
+	ld	a,IEF_VBLANK+IEF_LCDC
+	ld	[rIE],a
+	ei
 	CopyTileset			Logo1,0,120
 	CopyTileset			StarTiles,$1000,5
 	CopyTilesetInverted	Font,$800,64
@@ -254,6 +268,22 @@ MainLoop:
 ; =============
 ; Misc routines
 ; =============
+
+_CopyBytes:
+	inc	b
+	inc	c
+	dec	c
+	jr	nz,.loop
+	dec	b
+.loop
+	ld	a,[hli]
+	ld	[de],a
+	inc	de
+	dec	c
+	jr	nz,.loop
+	dec	b
+	jr	nz,.loop
+	ret
 
 EmergencyBootROM:
 	halt
@@ -388,6 +418,7 @@ DoStat:
 	xor	a
 	ld	[VBlankFlag],a
 	reti
+DoStatEnd
 
 ; =================
 ; Graphics routines
