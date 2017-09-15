@@ -298,6 +298,19 @@ IntroAnimLoop2::
 	ld	a,12
 	ld	[Scroll3Delay],a
 	
+	ld	hl,ScrollerText
+	ld	a,h
+	ld	[ScrollerTextPtr+1],a
+	ld	a,l
+	ld	[ScrollerTextPtr],a
+	ld	hl,ScrollerBaseAddr
+	ld	a,h
+	ld	[ScrollerPointer+1],a
+	ld	a,l
+	ld	[ScrollerPointer],a
+	ld	a,16
+	ld	[ScrollerTextTimer],a
+	
 MainLoop::
 	rst	$00			; wait for VBlank
 	xor	a
@@ -349,7 +362,7 @@ MainLoop::
 	add	hl,de
 	ld	e,d
 	ld	d,a
-	ld	a,[hli]
+	ld	a,[hl+]
 	ld	h,[hl]
 	ld	l,a
 	call	_hl_
@@ -369,6 +382,9 @@ MainLoop::
 	ld	a,[CurScrollId]
 	and	a
 	jr	nz,.loop
+	
+	call	UpdateScrollerText
+	
 	jr	MainLoop
 
 ; adjust the LYC values so they overlap correctly
@@ -530,7 +546,7 @@ UpdateScroller:
 	ld	a,[hl]	; \1TablePos
 	inc	a
 	and	$7f
-	ld	[hli],a
+	ld	[hl+],a
 	inc	[hl]	; \1XPos
 	inc	hl
 	push	hl
@@ -546,6 +562,52 @@ UpdateScroller:
 	ld	a,135
 	sub	[hl]
 	ret
+	
+	
+UpdateScrollerText:
+	ld	a,[ScrollerTextTimer]
+	dec	a
+	ld	[ScrollerTextTimer],a
+	and	a
+	ret	nz
+	ld	a,8
+	ld	[ScrollerTextTimer],a
+	ld	hl,ScrollerPointer
+	ld	a,[hl+]
+	ld	h,[hl]
+	ld	l,a
+	ld	d,h
+	ld	e,l
+	ld	hl,ScrollerTextPtr
+	ld	a,[hl+]
+	ld	h,[hl]
+	ld	l,a
+	
+	ldh	a,[rSTAT]	; wait for VRAM accessibility
+	and	2
+	jr	nz,@-4
+	ld	b,b
+	ld	a,[hl+]
+	add	$60
+	ld	[de],a
+	inc	de
+	ld	a,e
+	cp	$40
+	jr	nz,.skip
+	sub	$20
+	ld	e,a
+.skip
+	ld	a,h
+	ld	[ScrollerTextPtr+1],a
+	ld	a,l
+	ld	[ScrollerTextPtr],a
+	ld	a,d
+	ld	[ScrollerPointer+1],a
+	ld	a,e
+	ld	[ScrollerPointer],a
+	ret
+
+ScrollerText:	incbin	"ScrollerText.txt"
 
 ; =============
 ; Misc routines

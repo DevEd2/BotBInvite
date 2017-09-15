@@ -7,7 +7,7 @@
 ; ================================================================
 
 ClearWRAM:
-	ld	hl,$c001	; don't clear first byte of WRAM (preserve RNG seed)
+	ld	hl,$c000	; don't clear first byte of WRAM (preserve RNG seed)
 	ld	bc,$1fff
 	jr	ClearLoop	; routine continues in ClearLoop
 
