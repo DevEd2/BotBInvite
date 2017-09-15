@@ -18,6 +18,9 @@
 *.pyc
 *$py.class
 
+# because nezplay is a dumb and likes to put .ini files in the working directory
+*.ini
+
 # from github/gitignore/blob/master/Global/Windows.gitignore
 # Windows image file caches
 Thumbs.db
