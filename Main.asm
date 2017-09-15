@@ -586,7 +586,6 @@ UpdateScrollerText:
 	ldh	a,[rSTAT]	; wait for VRAM accessibility
 	and	2
 	jr	nz,@-4
-	ld	b,b
 	ld	a,[hl+]
 	add	$60
 	ld	[de],a
