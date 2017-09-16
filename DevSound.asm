@@ -335,7 +335,7 @@ CH1_CheckByte:
 	ld	a,[hl+]
 	ld	h,[hl]
 	ld	l,a
-	jp	[hl]
+	jp	hl
 	
 .endChannel
 	xor	a
@@ -672,7 +672,7 @@ CH2_CheckByte:
 	ld	a,[hl+]
 	ld	h,[hl]
 	ld	l,a
-	jp	[hl]
+	jp	hl
 	
 .endChannel
 	xor	a
@@ -1002,7 +1002,7 @@ CH3_CheckByte:
 	ld	a,[hl+]
 	ld	h,[hl]
 	ld	l,a
-	jp	[hl]
+	jp	hl
 	
 .endChannel
 	xor	a
@@ -1349,7 +1349,7 @@ CH4_CheckByte:
 	ld	a,[hl+]
 	ld	h,[hl]
 	ld	l,a
-	jp	[hl]
+	jp	hl
 	
 .endChannel
 	xor	a
