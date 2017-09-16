@@ -16,6 +16,16 @@ lb: macro
 	ld \1, (\2 _lo) << 8 + (\3 _lo)
 endm
 
+ladbc: macro
+; bc = nn + a
+	add	\1 _lo
+	ld	c,a
+	ld	b,\1 _hi
+	jr	nc,.nocarry@
+	inc	b
+.nocarry@
+	endm
+
 ladhl: macro
 ; hl = nn + a
 	add	\1 _lo

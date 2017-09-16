@@ -19,6 +19,9 @@ ShowLogo:				ds	1
 VBlankFlag:				ds	1
 TempBGP:				ds	1
 
+CurZoomScale:			ds	1
+CurZoomSCY:				ds	2
+
 wram_scroller:	macro
 \1:
 \1TablePos:				ds	1

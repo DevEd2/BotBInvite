@@ -254,12 +254,8 @@ Nintendo2BotB::
 	ld	[rBGP],a
 	ld	[rOBP0],a
 	di
-	ld	a,JP_OP
-	ld	[VBlank],a
-	ld	a,DoVBlank_Logo _lo
-	ld	[VBlank+1],a
-	ld	a,DoVBlank_Logo _hi
-	ld	[VBlank+2],a
+	ld	hl,DoVBlank_Logo
+	call	LoadVBlankPointer
 	ei
 	
 ; Clear t and o from Nintendo logo
@@ -358,20 +354,96 @@ endr
 	jr	.loop
 	
 .done
+; set up tilemap for the next part
+	Fill		0,TempGFXBuffer,64
+	CopyTileset	TempGFXBuffer,$1900,4	; = 64 tiles
+	ld	a,$30
+	ld	hl,TempGFXBuffer
+	lb	bc,1,20
+	call	GFXBlock
+	CopyTileset	TempGFXBuffer,$1800,2	; = 32 tiles
 	ld	b,120
 	call	DelayFrames
 	
-ShowScreen1::
-	halt
+ZoomInBotBLogo::
+; TODO: horizontally stretch the gfx
+	ld	a,8
+	ld	[rSCY],a
+	ld	a,%11111100
+	ld	[rBGP],a
+	ld	[TempBGP],a
+	ld	a,STATF_MODE00
+	ld	[rSTAT],a
 	di
+	ld	hl,DoVBlank
+	call	LoadVBlankPointer
+	CopyBytes	DoStat_Zoom,LCDStat,DoStat_ZoomEnd-DoStat_Zoom
+	ei
+	; temp code: put 1x botb on tile $37
+	ld	hl,TempGFXBuffer
+	ld	de,BotB_1x
+	ld	b,8
+.tmploop
+	push	hl
+	ld	c,4
+.tmploop2
+	ld	a,[de]
+	inc	de
+	ld	[hl],a
+	push	bc
+	ld	bc,8
+	add	hl,bc
+	pop	bc
+	dec	c
+	jr	nz,.tmploop2
+	pop	hl
+	inc	hl
+	dec	b
+	jr	nz,.tmploop
+	CopyTileset1BPP	TempGFXBuffer,$370,4
+	
+	rst	$0
+	xor	a
+	ld	[rIF],a
+	ld	a,IEF_VBLANK+IEF_LCDC
+	ld	[rIE],a
+	ld	hl,rLCDC
+	res	1,[hl]	; disable sprites
+	ld	e,127
+.loop
+	inc	e
+	jr	z, ShowScreen1
+	ld	a,e
+	ld	[CurZoomScale],a
+	ld	hl,$380
+	ld	c,a
+	ld	b,$ff
+	ld	a,71
+	call	AddNTimes
+	ld	a,l
+	cpl
+	ld	[CurZoomSCY],a
+	ld	a,h
+	ld	[CurZoomSCY+1],a
+	call	LCDStat
+	xor	a
+	ld	[VBlankFlag],a
+	rst	$0
+	jr	.loop
+	
+ShowScreen1::
+	di
+.wait
+	ld	a,[rLY]
+	cp	144
+	jr	c,.wait
 	xor	a
 	ldh	[rLCDC],a	; disable	LCD
-	ld	a,JP_OP
-	ld	[VBlank],a
-	ld	a,DoVBlank _lo
-	ld	[VBlank+1],a
-	ld	a,DoVBlank _hi
-	ld	[VBlank+2],a
+	ldh	[rSTAT],a
+	dec	a	; = $ff
+	ld	[rBGP],a
+	ld	hl,DoVBlank
+	call	LoadVBlankPointer
 	CopyBytes	DoStat,LCDStat,DoStatEnd-DoStat
 	ld	a,IEF_VBLANK+IEF_LCDC
 	ld	[rIE],a
@@ -903,6 +975,15 @@ ScrollerBounceTable:
 ; Interrupt routines
 ; ==================
 
+LoadVBlankPointer:
+	ld	a,JP_OP
+	ld	[VBlank],a
+	ld	a,l
+	ld	[VBlank+1],a
+	ld	a,h
+	ld	[VBlank+2],a
+	ret
+
 DoVBlank:
 	ld	a,1
 	ld	[VBlankFlag],a
@@ -915,6 +996,8 @@ DoVBlank_Logo:
 	jr	DoVBlank
 
 DoStat:
+	push	af
+	push	bc
 	ld	a,[rSTAT]
 	and	%00000100
 	jr	z,.notlyc
@@ -925,8 +1008,8 @@ DoStat:
 	ld	[CurScrollId],a
 	and	3
 	dec	a
-	ladhl	ScrollLYCTable
-	ld	a,[hl]
+	ladbc	ScrollLYCTable
+	ld	a,[bc]
 	ld	[rLYC],a
 
 	pop	af
@@ -958,8 +1041,27 @@ DoStat:
 	ld	a,c
 	ld	[rBGP],a
 .notlyc
+	pop	bc
+	pop	af
 	reti
 DoStatEnd
+
+DoStat_Zoom:
+	push	af
+	push	hl
+	ld	hl,CurZoomSCY+1
+	ld	a,[hl-]
+	ld	[rSCY],a
+	ld	a,[CurZoomScale]
+	add	[hl]
+	ld	[hli],a
+	jr	nc,.nocarry
+	dec	[hl]
+.nocarry
+	pop	hl
+	pop	af
+	reti
+DoStat_ZoomEnd
 
 ; =================
 ; Graphics routines
