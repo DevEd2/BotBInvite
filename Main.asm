@@ -310,7 +310,7 @@ IntroAnimLoop2::
 	ld	[ScrollerPointer+1],a
 	ld	a,l
 	ld	[ScrollerPointer],a
-	ld	a,16
+	ld	a,18
 	ld	[ScrollerTextTimer],a
 	
 MainLoop::
