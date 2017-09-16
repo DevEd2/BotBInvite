@@ -7,7 +7,7 @@
 ; ================================================================
 
 ClearWRAM:
-	ld	hl,$c000	; don't clear first byte of WRAM (preserve RNG seed)
+	ld	hl,$c001	; don't clear first byte of WRAM (preserve RNG seed)
 	ld	bc,$1fff
 	jr	ClearLoop	; routine continues in ClearLoop
 
@@ -35,12 +35,7 @@ ClearVRAM:
 	
 ClearLoop:
 	xor	a
-	ld	[hl+],a
-	dec	bc
-	ld	a,b
-	or	c
-	jr	nz,ClearLoop
-	ret
+	jp	_Fill
 
 ; ================================================================
 ; Wait for LCD status to change

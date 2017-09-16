@@ -236,9 +236,131 @@ StartDemo::
 .continue
 	xor	a
 	call	DS_Init
+; copy oam dma routine into hram
+	ld	hl,OAM_DMA_
+	lb	bc,10,OAM_DMA _lo
+.copy
+	ld	a,[hl+]
+	ld	[$ff00+c],a
+	inc	c
+	dec	b
+	jr	nz,.copy
+	
+Nintendo2BotB::
+	CopyTileset1BPP	BotB_2x,$200,10
+	CopyBytes	BotBSpriteTable,Sprites,BotBSpriteTableEnd-BotBSpriteTable
+	ld	a,%11111100
+	ld	[TempBGP],a
+	ld	[rBGP],a
+	ld	[rOBP0],a
+	di
+	ld	a,JP_OP
+	ld	[VBlank],a
+	ld	a,DoVBlank_Logo _lo
+	ld	[VBlank+1],a
+	ld	a,DoVBlank_Logo _hi
+	ld	[VBlank+2],a
+	ei
+	
+; Clear t and o from Nintendo logo
+	rst $00
+	ld	a,%11000000
+	ld	[$80bc],a
+	ld	[$80be],a
+x = 0
+rept 8
+	ld	[$8110+x],a
+x = x+2
+endr
+x = 0
+rept 8
+	ld	[$8170+x],a
+x = x+2
+endr
+	xor	a
+	ld	[$8068],a
+	ld	[$806a],a
+	ld	[$9908],a
+	ld	[$990f],a
+	ld	[$992f],a
+	ld	a,[rLCDC]
+	or	%00000110	; 8x16 sprites
+	ld	[rLCDC],a
+	
+; time to move those into BotB
+	xor	a
+.loop
+	cp	56
+	jr	z,.done
+	ld	d,a
+	ladhl	BotBMoveTable
+	ld	c,[hl]
+	ld	e,c	; store for future uses
+	ld	b,0
+	ld	hl,$80	; = 0.5, for nearest integer rounding
+	ld	a,67	; both B
+	call	AddNTimes
+	ld	a,h
+	sub	4
+	ld	[Sprites+1],a
+	add	8
+	ld	[Sprites+5],a
+	ld	a,168
+	sub	h
+	ld	[Sprites+21],a
+	add	8
+	ld	[Sprites+25],a
+	ld	c,e
+	ld	b,0
+	ld	hl,$80
+	ld	a,47	; o
+	call	AddNTimes
+	ld	a,124
+	sub	h
+	ld	[Sprites+9],a
+	add	8
+	ld	[Sprites+13],a
+	ld	c,e
+	ld	b,0
+	ld	hl,$80
+	ld	a,17	; t
+	call	AddNTimes
+	ld	a,h
+	add	74
+	ld	[Sprites+17],a
 
-	; pigdevil2010: logo joke goes here
-
+; Fade out Nin end ®
+	ld	a,d
+	swap	a
+	and	3
+	bit	3,d
+	jr	z,.noflicker
+	bit	0,d
+	jr	z,.noflicker
+	inc	a
+.noflicker
+	and a
+	ld	b,%11111100
+	jr	z,.gotbgp
+	dec a
+	ld	b,%10101000
+	jr	z,.gotbgp
+	dec a
+	ld	b,%01010100
+	jr	z,.gotbgp
+	ld	b,%00000000
+.gotbgp
+	ld	a,b
+	ld	[TempBGP],a
+	rst $00
+	ld	a,d
+	inc	a
+	jr	.loop
+	
+.done
+	ld	b,120
+	call	DelayFrames
+	
 ShowScreen1::
 	halt
 	di
@@ -246,9 +368,9 @@ ShowScreen1::
 	ldh	[rLCDC],a	; disable	LCD
 	ld	a,JP_OP
 	ld	[VBlank],a
-	ld	a,DoVBlank % $100
+	ld	a,DoVBlank _lo
 	ld	[VBlank+1],a
-	ld	a,DoVBlank / $100
+	ld	a,DoVBlank _hi
 	ld	[VBlank+2],a
 	CopyBytes	DoStat,LCDStat,DoStatEnd-DoStat
 	ld	a,IEF_VBLANK+IEF_LCDC
@@ -257,6 +379,8 @@ ShowScreen1::
 	CopyTileset			Logo1,0,120
 	CopyTileset			StarTiles,$1000,5
 	CopyTilesetInverted	Font,$800,64
+	Fill				0,Sprites,160
+	Fill				0,$fe00,160
 	ld	hl,Logo1Map
 	ld	de,_SCRN0
 	call	LoadMap
@@ -553,12 +677,7 @@ UpdateScroller:
 	inc	[hl]	; \1XPos
 	inc	hl
 	push	hl
-	add	ScrollerBounceTable % $100
-	ld	l,a
-	ld	h,ScrollerBounceTable / $100
-	jr	nc,.nocarry
-	inc	h
-.nocarry
+	ladhl	ScrollerBounceTable
 	ld	a,[hl]
 	pop	hl
 	ld	[hl],a	; \1YPos
@@ -617,7 +736,7 @@ ScrollerText:	incbin	"ScrollerText.txt"
 
 _hl_:
 	jp	hl
-
+	
 _Fill:
 	inc	b
 	inc	c
@@ -631,7 +750,7 @@ _Fill:
 	dec	b
 	jr	nz,.loop
 	ret
-
+	
 _CopyBytes:
 	inc	b
 	inc	c
@@ -647,7 +766,24 @@ _CopyBytes:
 	dec	b
 	jr	nz,.loop
 	ret
-
+	
+DelayFrames:
+	rst	$00
+	dec	b
+	jr	nz,DelayFrames
+	
+AddNTimes:
+; hl = hl + bc * a
+	and	a
+	ret	z
+	srl	a
+	jr	nc,.skip
+	add	hl,bc
+.skip
+	sla	c
+	rl	b
+	jr	AddNTimes
+	
 EmergencyBootROM:
 	halt
 	xor	a
@@ -673,7 +809,7 @@ EmergencyBootROM:
 	call	GFXBlock
 	ld	[$9910],a
 	
-	ld	a,%000001100
+	ld	a,%00001100
 	ldh	[rBGP],a
 	ld	a,%10010001
 	ldh	[rLCDC],a
@@ -734,6 +870,20 @@ EmergencyBootROM:
 ; Misc data
 ; =========
 
+BotBSpriteTable:
+	db	80, -4,$20,0,80,  4,$22,0	; B
+	db	80,124,$24,0,80,132,$26,0	; o
+	db	80, 74,$28,0				; t
+	db	80,168,$20,0,80,176,$22,0	; B
+BotBSpriteTableEnd
+	
+BotBMoveTable:
+; floor(-(1-x/56)^2.2*256+256)
+	db	  0,  9, 19, 29, 38, 47, 56, 65, 73, 81, 89, 97,105,112
+	db	120,127,133,140,146,153,159,164,170,176,181,186,191,195
+	db	200,204,208,212,216,219,223,226,229,232,234,237,239,241
+	db	243,245,247,248,250,251,252,253,254,254,255,255,255,255
+	
 ScreenShakeTable:
 	db	3,6,3,0,3,6,3,0,2,5,3,0,2,5,3,0
 	db	2,4,2,0,2,4,2,0,1,3,2,0,1,3,2,0
@@ -758,6 +908,12 @@ DoVBlank:
 	ld	[VBlankFlag],a
 	reti
 
+DoVBlank_Logo:
+	call	OAM_DMA
+	ld	a,[TempBGP]
+	ld	[rBGP],a
+	jr	DoVBlank
+
 DoStat:
 	ld	a,[rSTAT]
 	and	%00000100
@@ -769,12 +925,7 @@ DoStat:
 	ld	[CurScrollId],a
 	and	3
 	dec	a
-	add	ScrollLYCTable % $100
-	ld	l,a
-	ld	h,ScrollLYCTable / $100
-	jr	nc,.nocarry
-	inc	h
-.nocarry
+	ladhl	ScrollLYCTable
 	ld	a,[hl]
 	ld	[rLYC],a
 
@@ -892,30 +1043,30 @@ HBlankCopy2bpp:
 	jr	nz,.wait2
 .nowait
 	ld	a,c
-	ld	[hli],a
+	ld	[hl+],a
 	ld	a,b
-	ld	[hli],a
+	ld	[hl+],a
 	ld	a,e
-	ld	[hli],a
+	ld	[hl+],a
 	ld	a,d
-	ld	[hli],a
+	ld	[hl+],a
 	pop	de
 	ld	a,e
-	ld	[hli],a
+	ld	[hl+],a
 	ld	a,d
-	ld	[hli],a
+	ld	[hl+],a
 	pop	de
 	ld	a,e
-	ld	[hli],a
+	ld	[hl+],a
 	ld	[hl],d
 	inc	hl
-	ld	a,[tempBC]
+	ldh	a,[tempBC]
 	dec	a
-	ld	[tempBC],a
+	ldh	[tempBC],a
 	jr	nz,.loop
-	ld	a,[tempBC+1]
+	ldh	a,[tempBC+1]
 	dec	a
-	ld	[tempBC+1],a
+	ldh	[tempBC+1],a
 	jr	nz,.loop
 	jr	DoneHBlankCopy
 	
@@ -945,30 +1096,30 @@ HBlankCopy1bpp:
 	jr	nz,.wait2
 .nowait
 	ld	a,c
-	ld	[hli],a
-	ld	[hli],a
+	ld	[hl+],a
+	ld	[hl+],a
 	ld	a,b
-	ld	[hli],a
-	ld	[hli],a
+	ld	[hl+],a
+	ld	[hl+],a
 	ld	a,e
-	ld	[hli],a
-	ld	[hli],a
+	ld	[hl+],a
+	ld	[hl+],a
 	ld	a,d
-	ld	[hli],a
-	ld	[hli],a
-	ld	a,[tempBC]
+	ld	[hl+],a
+	ld	[hl+],a
+	ldh	a,[tempBC]
 	dec	a
-	ld	[tempBC],a
+	ldh	[tempBC],a
 	jr	nz,.loop
-	ld	a,[tempBC+1]
+	ldh	a,[tempBC+1]
 	dec	a
-	ld	[tempBC+1],a
+	ldh	[tempBC+1],a
 	jr	nz,.loop
 
 DoneHBlankCopy:
-	ld	a,[tempSP]
+	ldh	a,[tempSP]
 	ld	l,a
-	ld	a,[tempSP+1]
+	ldh	a,[tempSP+1]
 	ld	h,a
 	ld	sp,hl
 	reti
@@ -985,9 +1136,9 @@ endr
 	dec	b
 .skip
 	ld	a,c
-	ld	[tempBC],a
+	ldh	[tempBC],a
 	ld	a,b
-	ld	[tempBC+1],a
+	ldh	[tempBC+1],a
 	ret
 	
 GFXBlock:
@@ -1006,6 +1157,15 @@ GFXBlock:
 	jr	nz, GFXBlock
 	ret
 	
+OAM_DMA_:
+	ld	a,Sprites _hi
+	ld	[rDMA],a
+	ld	a,$28
+.wait
+	dec	a
+	jr	nz,.wait
+	ret
+	
 ; =============
 ; Graphics data
 ; =============
@@ -1013,6 +1173,8 @@ GFXBlock:
 Font:					incbin	"Font.bin"
 
 BootROMRegisteredGFX:	db	$3c,$42,$b9,$a5,$b9,$a5,$42,$3c
+BotB_2x:				incbin	"GFX/botb_2x.bin"
+BotB_1x:				incbin	"GFX/botb_1x.bin"
 
 Logo1:					incbin	"GFX/Logo1.bin"
 Logo1Map:				incbin	"GFX/Logo1Map.bin"

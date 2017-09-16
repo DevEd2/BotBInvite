@@ -9,9 +9,22 @@ incMacros	set	1
 ; Global macros
 ; ================================================================
 
+_lo	equs	"& $ff"
+_hi	equs	">> 8"
+
 lb: macro
-	ld \1, (\2 & $ff) << 8 + (\3 & $ff)
+	ld \1, (\2 _lo) << 8 + (\3 _lo)
 endm
+
+ladhl: macro
+; hl = nn + a
+	add	\1 _lo
+	ld	l,a
+	ld	h,\1 _hi
+	jr	nc,.nocarry@
+	inc	h
+.nocarry@
+	endm
 
 bgcoord: macro
 if _NARG >= 4
@@ -19,10 +32,14 @@ if _NARG >= 4
 else
 	ld \1, \3 * $20 + \2 + $9800
 endc
-endm
+	endm
 
-Fill:				macro
+Fill:					macro
+if \1 == 0
+	xor	a
+else
 	ld	a,\1
+endc
 	ld	hl,\2
 	ld	bc,\3
 	call	_Fill

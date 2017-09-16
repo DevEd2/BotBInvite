@@ -11,16 +11,13 @@ SECTION	"Variables",WRAM0
 ; Global variables
 ; ================================================================
 
-Sprites:				ds  160
-VBlank:					ds  3
-LCDStat:				ds  93	; currently padded to $c100
-
-sys_RNGSeed:			ds	1
+sys_RNGSeed:			ds	1	; must be at $c000
 EmuCheck:				ds	1	; variable used to determine if we're running in an emulator
 sys_btnPress:			ds	1
 sys_btnHold:			ds	1
 ShowLogo:				ds	1
 VBlankFlag:				ds	1
+TempBGP:				ds	1
 
 wram_scroller:	macro
 \1:
@@ -40,8 +37,13 @@ Scroll2Delay:			ds	1
 Scroll3Delay:			ds	1
 	wram_scroller		Scroll3
 
+SECTION	"Variables 2",WRAM0[$c100]
+Sprites:				ds  160
+VBlank:					ds  3
+LCDStat:				ds  93	; currently padded to $c200
+	
 TempGFXBuffer:
-EmergencyNintendoLogo:	ds	$190
+EmergencyNintendoLogo:
 
 ; ================================================================
 ; Project-specific variables
