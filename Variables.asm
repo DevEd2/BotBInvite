@@ -40,7 +40,7 @@ Scroll2Delay:			ds	1
 Scroll3Delay:			ds	1
 	wram_scroller		Scroll3
 
-; temp, not needed after logo screen
+TempGFXBuffer:
 EmergencyNintendoLogo:	ds	$190
 
 ; ================================================================

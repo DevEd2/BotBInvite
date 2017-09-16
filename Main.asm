@@ -815,6 +815,9 @@ DoStatEnd
 ; =================
 
 _CopyTileset:
+	ld	a, [rLCDC]
+	bit	7,a
+	jr	nz,HBlankCopy2bpp
 	ld	a,[hl+]
 	ld	[de],a
 	inc	de
@@ -825,6 +828,9 @@ _CopyTileset:
 	ret
 	
 _CopyTileset1BPP:
+	ld	a, [rLCDC]
+	bit	7,a
+	jr	nz,HBlankCopy1bpp
 	ld	a,[hl+]			; get tile
 	ld	[de],a			; write tile
 	inc	de				; increment destination address
@@ -838,6 +844,18 @@ _CopyTileset1BPP:
 	ret
 	
 _CopyTilesetInverted:
+	ld	a, [rLCDC]
+	bit	7,a
+	jr	z,.normalcopy
+	push	bc
+	push	de
+	ld	de,	TempGFXBuffer
+	call	.normalcopy
+	pop	de
+	pop	bc
+	ld	hl,	TempGFXBuffer
+	jr	HBlankCopy2bpp
+.normalcopy
 	ld	a,[hl+]
 	cpl
 	ld	[de],a
@@ -846,6 +864,130 @@ _CopyTilesetInverted:
 	ld	a,b
 	or	c
 	jr	nz,_CopyTilesetInverted
+	ret	
+	
+HBlankCopy2bpp:
+	call	AdjustBCForHBlankCopy
+	di
+	ld	[tempSP],sp
+	ld	sp,hl
+	ld	h,d
+	ld	l,e
+.loop
+	pop	bc
+	pop	de
+	ld	a,[rLY]
+	; if in line 144 - 152 (VBlank), don't wait for stat 3
+	cp	144
+	jr	c,.wait
+	cp	153
+	jr	c,.nowait
+.wait
+	ld	a,[rSTAT]
+	and	3
+	jr	z,.wait
+.wait2
+	ld	a,[rSTAT]
+	and	2
+	jr	nz,.wait2
+.nowait
+	ld	a,c
+	ld	[hli],a
+	ld	a,b
+	ld	[hli],a
+	ld	a,e
+	ld	[hli],a
+	ld	a,d
+	ld	[hli],a
+	pop	de
+	ld	a,e
+	ld	[hli],a
+	ld	a,d
+	ld	[hli],a
+	pop	de
+	ld	a,e
+	ld	[hli],a
+	ld	[hl],d
+	inc	hl
+	ld	a,[tempBC]
+	dec	a
+	ld	[tempBC],a
+	jr	nz,.loop
+	ld	a,[tempBC+1]
+	dec	a
+	ld	[tempBC+1],a
+	jr	nz,.loop
+	jr	DoneHBlankCopy
+	
+HBlankCopy1bpp:
+	call	AdjustBCForHBlankCopy
+	di
+	ld	[tempSP],sp
+	ld	sp,hl
+	ld	h,d
+	ld	l,e
+.loop
+	pop	bc
+	pop	de
+	ld	a,[rLY]
+	; if in line 144 - 152 (VBlank), don't wait for stat 3
+	cp	144
+	jr	c,.wait
+	cp	153
+	jr	c,.nowait
+.wait
+	ld	a,[rSTAT]
+	and	3
+	jr	z,.wait
+.wait2
+	ld	a,[rSTAT]
+	and	2
+	jr	nz,.wait2
+.nowait
+	ld	a,c
+	ld	[hli],a
+	ld	[hli],a
+	ld	a,b
+	ld	[hli],a
+	ld	[hli],a
+	ld	a,e
+	ld	[hli],a
+	ld	[hli],a
+	ld	a,d
+	ld	[hli],a
+	ld	[hli],a
+	ld	a,[tempBC]
+	dec	a
+	ld	[tempBC],a
+	jr	nz,.loop
+	ld	a,[tempBC+1]
+	dec	a
+	ld	[tempBC+1],a
+	jr	nz,.loop
+
+DoneHBlankCopy:
+	ld	a,[tempSP]
+	ld	l,a
+	ld	a,[tempSP+1]
+	ld	h,a
+	ld	sp,hl
+	reti
+
+AdjustBCForHBlankCopy:
+rept 3	; bc = bc/8
+	srl	b
+	rr	c
+endr
+	inc	b
+	inc	c
+	dec	c
+	jr	nz,.skip
+	dec	b
+.skip
+	ld	a,c
+	ld	[tempBC],a
+	ld	a,b
+	ld	[tempBC+1],a
 	ret
 	
 GFXBlock:
