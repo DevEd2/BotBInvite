@@ -115,6 +115,9 @@ CheckInput:
 ; ================================================================
 
 LoadMap:
+	ld	a, [rLCDC]
+	bit	7,a
+	jp	nz,HBlankLoadMap
 	ld	de,_SCRN0
 	ld	b,$12
 	ld	c,$14

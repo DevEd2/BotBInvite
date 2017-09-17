@@ -354,24 +354,43 @@ endr
 	jr	.loop
 	
 .done
-; set up tilemap for the next part
-	Fill		0,TempGFXBuffer,64
-	CopyTileset	TempGFXBuffer,$1900,4	; = 64 tiles
+; set up gfx for the next part
+	CopyTileset1BPP	BotB_1x,$300,8
+	CopyTileset1BPP	BotB_Strip,$400,55
+; 1x botb tilemap
 	ld	a,$30
 	ld	hl,TempGFXBuffer
-	lb	bc,1,20
+	lb	bc,1,8
 	call	GFXBlock
-	CopyTileset	TempGFXBuffer,$1800,2	; = 32 tiles
+	ld	hl,TempGFXBuffer
+	ld	de,$9806
+	ld	bc,8
+	call	_CopyTileset
+; strip tilemap
+	Fill			0,TempGFXBuffer+13,19
+	Fill			0,TempGFXBuffer+45,19
+	Fill			0,TempGFXBuffer+77,19
+	Fill			0,TempGFXBuffer+116,12
+	ld	hl,TempGFXBuffer
+rept 4
+	ld	[hli],a
+endr
+	ld	a,$40
+	lb	bc,1,9
+	call	GFXBlock
+	ld	hl,TempGFXBuffer+32
+	lb	bc,3,13
+	call	GFXBlock
+	ld	hl,TempGFXBuffer+109
+	lb	bc,1,7
+	call	GFXBlock
+	CopyTileset		TempGFXBuffer,$1900,8	; = 128 tiles
 	ld	b,120
 	call	DelayFrames
 	
-ZoomInBotBLogo::
-; TODO: horizontally stretch the gfx
+VertStretchBotBLogo::
 	ld	a,8
 	ld	[rSCY],a
-	ld	a,%11111100
-	ld	[rBGP],a
-	ld	[TempBGP],a
 	ld	a,STATF_MODE00
 	ld	[rSTAT],a
 	di
@@ -379,42 +398,21 @@ ZoomInBotBLogo::
 	call	LoadVBlankPointer
 	CopyBytes	DoStat_Zoom,LCDStat,DoStat_ZoomEnd-DoStat_Zoom
 	ei
-	; temp code: put 1x botb on tile $37
-	ld	hl,TempGFXBuffer
-	ld	de,BotB_1x
-	ld	b,8
-.tmploop
-	push	hl
-	ld	c,4
-.tmploop2
-	ld	a,[de]
-	inc	de
-	ld	[hl],a
-	push	bc
-	ld	bc,8
-	add	hl,bc
-	pop	bc
-	dec	c
-	jr	nz,.tmploop2
-	pop	hl
-	inc	hl
-	dec	b
-	jr	nz,.tmploop
-	CopyTileset1BPP	TempGFXBuffer,$370,4
 	
 	rst	$0
 	xor	a
 	ld	[rIF],a
 	ld	a,IEF_VBLANK+IEF_LCDC
 	ld	[rIE],a
+	ld	a,%11111100
+	ld	[rBGP],a
 	ld	hl,rLCDC
 	res	1,[hl]	; disable sprites
-	ld	e,127
+	ld	a,127
 .loop
-	inc	e
-	jr	z, ShowScreen1
-	ld	a,e
+	inc	a
 	ld	[CurZoomScale],a
+	jr	z,HorizStretchBotBLogo
 	ld	hl,$380
 	ld	c,a
 	ld	b,$ff
@@ -425,23 +423,38 @@ ZoomInBotBLogo::
 	ld	[CurZoomSCY],a
 	ld	a,h
 	ld	[CurZoomSCY+1],a
-	call	LCDStat
+	call	LCDStat	; line 0
 	xor	a
 	ld	[VBlankFlag],a
 	rst	$0
+	ld	a,[CurZoomScale]
+	jr	.loop
+	
+HorizStretchBotBLogo::
+	di
+	CopyBytes	DoStat_ZoomV,LCDStat,DoStat_ZoomVEnd-DoStat_ZoomV
+	ei
+	ld	a,-1
+.loop
+	inc	a
+	ld	[CurZoomScale],a
+	cp	32
+	jr	z,ShowScreen1
+	call	LCDStat	; line 0
+	xor	a
+	ld	[VBlankFlag],a
+	rst	$0
+	ld	a,[CurZoomScale]
 	jr	.loop
 	
 ShowScreen1::
-	di
-.wait
-	ld	a,[rLY]
-	cp	144
-	jr	c,.wait
 	xor	a
-	ldh	[rLCDC],a	; disable	LCD
 	ldh	[rSTAT],a
 	dec	a	; = $ff
 	ld	[rBGP],a
+	ld	b,6
+	call	DelayFrames
+	di
 	ld	hl,DoVBlank
 	call	LoadVBlankPointer
 	CopyBytes	DoStat,LCDStat,DoStatEnd-DoStat
@@ -452,7 +465,8 @@ ShowScreen1::
 	CopyTileset			StarTiles,$1000,5
 	CopyTilesetInverted	Font,$800,64
 	Fill				0,Sprites,160
-	Fill				0,$fe00,160
+	call	WaitStat
+	call	OAM_DMA
 	ld	hl,Logo1Map
 	ld	de,_SCRN0
 	call	LoadMap
@@ -840,9 +854,12 @@ _CopyBytes:
 	ret
 	
 DelayFrames:
+	xor	a
+	ld	a,[VBlankFlag]
 	rst	$00
 	dec	b
 	jr	nz,DelayFrames
+	ret
 	
 AddNTimes:
 ; hl = hl + bc * a
@@ -1063,6 +1080,24 @@ DoStat_Zoom:
 	reti
 DoStat_ZoomEnd
 
+DoStat_ZoomV:
+	push	af
+	push	bc
+	ld	a,[rLY]
+	cp	144
+	jr	c,.noxora
+	ld 	a,-1
+.noxora
+	ld	c,a
+	ld	a,[CurZoomScale]
+	sub	c
+	add	63
+	ld	[rSCY],a
+	pop	bc
+	pop	af
+	reti
+DoStat_ZoomVEnd
+
 ; =================
 ; Graphics routines
 ; =================
@@ -1116,7 +1151,7 @@ _CopyTilesetInverted:
 	dec	bc
 	ld	a,b
 	or	c
-	jr	nz,_CopyTilesetInverted
+	jr	nz,.normalcopy
 	ret	
 	
 HBlankCopy2bpp:
@@ -1130,11 +1165,9 @@ HBlankCopy2bpp:
 	pop	bc
 	pop	de
 	ld	a,[rLY]
-	; if in line 144 - 152 (VBlank), don't wait for stat 3
+	; if in line >144 (VBlank), don't wait for stat 0
 	cp	144
-	jr	c,.wait
-	cp	153
-	jr	c,.nowait
+	jr	nc,.nowait
 .wait
 	ld	a,[rSTAT]
 	and	3
@@ -1183,11 +1216,9 @@ HBlankCopy1bpp:
 	pop	bc
 	pop	de
 	ld	a,[rLY]
-	; if in line 144 - 152 (VBlank), don't wait for stat 3
+	; if in line >144 (VBlank), don't wait for stat 0
 	cp	144
-	jr	c,.wait
-	cp	153
-	jr	c,.nowait
+	jr	nc,.nowait
 .wait
 	ld	a,[rSTAT]
 	and	3
@@ -1225,7 +1256,7 @@ DoneHBlankCopy:
 	ld	h,a
 	ld	sp,hl
 	reti
-
+	
 AdjustBCForHBlankCopy:
 rept 3	; bc = bc/8
 	srl	b
@@ -1242,6 +1273,70 @@ endr
 	ld	a,b
 	ldh	[tempBC+1],a
 	ret
+	
+HBlankLoadMap:
+	ld	a,2
+	ldh	[tempBC],a
+	ld	a,18
+	ldh	[tempBC+1],a
+	di
+	ld	[tempSP],sp
+	ld	sp,hl
+	ld	h,d
+	ld	l,e
+.loop
+	pop	bc
+	pop	de
+	ld	a,[rLY]
+	; if in line >144 (VBlank), don't wait for stat 0
+	cp	144
+	jr	nc,.nowait
+.wait
+	ld	a,[rSTAT]
+	and	3
+	jr	z,.wait
+.wait2
+	ld	a,[rSTAT]
+	and	2
+	jr	nz,.wait2
+.nowait
+	ld	a,c
+	ld	[hl+],a
+	ld	a,b
+	ld	[hl+],a
+	ld	a,e
+	ld	[hl+],a
+	ld	a,d
+	ld	[hl+],a
+rept 2
+	pop	de
+	ld	a,e
+	ld	[hl+],a
+	ld	a,d
+	ld	[hl+],a
+endr
+	pop	de
+	ld	a,e
+	ld	[hl+],a
+	ld	[hl],d
+	inc	hl
+	ldh	a,[tempBC]
+	dec	a
+	ldh	[tempBC],a
+	jr	nz,.loop
+	ld	a,2
+	ldh	[tempBC],a
+	ld	a,12
+	add	l
+	ld	l,a
+	jr	nc,.nocarry
+	inc	h
+.nocarry
+	ldh	a,[tempBC+1]
+	dec	a
+	ldh	[tempBC+1],a
+	jr	nz,.loop
+	jr	DoneHBlankCopy
 	
 GFXBlock:
 	push	bc
@@ -1277,6 +1372,7 @@ Font:					incbin	"Font.bin"
 BootROMRegisteredGFX:	db	$3c,$42,$b9,$a5,$b9,$a5,$42,$3c
 BotB_2x:				incbin	"GFX/botb_2x.bin"
 BotB_1x:				incbin	"GFX/botb_1x.bin"
+BotB_Strip:				incbin	"GFX/botbstrip.bin"
 
 Logo1:					incbin	"GFX/Logo1.bin"
 Logo1Map:				incbin	"GFX/Logo1Map.bin"
