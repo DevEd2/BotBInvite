@@ -62,6 +62,7 @@ vol_LongFade:		db	$7f,$ff
 
 arp_Follin:			db	0,19,0,$ff
 arp_PluckLong:		db	12,12,0,$ff
+arp_Octave:			db	12,12,12,12,0,0,0,0,$80,0
 
 ; =================================================================
 ; Noise sequences
@@ -143,6 +144,7 @@ InstrumentTable:
 	dw	ins_Follin
 	dw	ins_FollinEcho
 	dw	ins_LongFade
+	dw	ins_LongFadeArp
 	
 ; Instrument format: [no reset flag],[wave mode (ch3 only)],[voltable id],[arptable id],[pulsetable/wavetable id],[vibtable id]
 ; note that wave mode must be 0 for non-wave instruments
@@ -162,6 +164,7 @@ ins_WaveArp2:		Instrument	0,vol_WaveArp2,ArpBuffer,waveseq_Sawtooth,vib_Dummy
 ins_Follin:			Instrument	0,vol_Follin,arp_Follin,pulse_50,vib_Follin
 ins_FollinEcho:		Instrument	0,vol_FollinEcho,arp_Follin,pulse_50,vib_Follin
 ins_LongFade:		Instrument	0,vol_LongFade,arp_PluckLong,pulse_LongFade,vib_LongFade
+ins_LongFadeArp:	Instrument	0,vol_LongFade,arp_Octave,pulse_LongFade,vib_LongFade
 
 _ins_Kick			equ	0
 _ins_Snare			equ	1
@@ -178,6 +181,7 @@ _ins_WaveArp2		equ	10
 _ins_Follin			equ	11
 _ins_FollinEcho		equ	12
 _ins_LongFade		equ	13
+_ins_LongFadeArp	equ	14
 
 Kick				equ	_ins_Kick
 Snare				equ	_ins_Snare
@@ -202,15 +206,25 @@ AllNoobz_CH1:
 	dw	.block2
 	db	SetLoopPoint
 	
+	rept	7
 	db	CallSection
 	dw	.block3
-	db	B_2,2,D_3,4,B_2,4
+	db	CallSection
+	dw	.block4
 	db	CallSection
 	dw	.block3
-	db	E_2,2,E_3,4,D_3,4
-	db	C_2,4,C_3,2,C_2,2,B_2,2,C_3,2,E_2,2,C_2,4,C_3,4,C_2,2,B_2,4,C_3,4
-	db	D_2,4,D_3,2,D_2,2,C_3,2,D_3,2,F#2,2,D_2,4,D_3,4,D_2,2,G_3,4,F#3,4
-	db	GotoLoopPoint
+	db	CallSection
+	dw	.block5
+	endr
+	db	CallSection
+	dw	.block3
+	db	CallSection
+	dw	.block4
+	db	CallSection
+	dw	.block3
+	
+	db	EndChannel
+	
 
 .block1
 	db	E_2,4,E_3,2,E_2,2,D_3,2,E_3,2,E_2,2,C_2,4,C_3,4,C_2,2,B_2,4,C_3,4
@@ -224,6 +238,16 @@ AllNoobz_CH1:
 	
 .block3
 	db	E_2,4,E_3,2,E_2,2,D_3,2,E_3,2,G_2,2,E_2,4,E_3,4
+	ret
+	
+.block4
+	db	B_2,2,D_3,4,B_2,4
+	ret
+
+.block5
+	db	E_2,2,E_3,4,D_3,4
+	db	C_2,4,C_3,2,C_2,2,B_2,2,C_3,2,E_2,2,C_2,4,C_3,4,C_2,2,B_2,4,C_3,4
+	db	D_2,4,D_3,2,D_2,2,C_3,2,D_3,2,F#2,2,D_2,4,D_3,4,D_2,2,G_3,4,F#3,4
 	ret
 	
 ; --------------------------------

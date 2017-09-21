@@ -592,6 +592,8 @@ MainLoop::
 	ld	a,e
 	ld	[CurScrollId],a
 	
+	call	DS_Play	; let's hope this works
+	
 .loop
 	halt
 	ld	a,[CurScrollId]
@@ -1015,6 +1017,8 @@ DoVBlank_Logo:
 DoStat:
 	push	af
 	push	bc
+	push	de
+	push	hl
 	ld	a,[rSTAT]
 	and	%00000100
 	jr	z,.notlyc
@@ -1058,6 +1062,8 @@ DoStat:
 	ld	a,c
 	ld	[rBGP],a
 .notlyc
+	pop	hl
+	pop	de
 	pop	bc
 	pop	af
 	reti
@@ -1065,6 +1071,8 @@ DoStatEnd
 
 DoStat_Zoom:
 	push	af
+	push	bc
+	push	de
 	push	hl
 	ld	hl,CurZoomSCY+1
 	ld	a,[hl-]
@@ -1076,6 +1084,8 @@ DoStat_Zoom:
 	dec	[hl]
 .nocarry
 	pop	hl
+	pop	de
+	pop	bc
 	pop	af
 	reti
 DoStat_ZoomEnd
@@ -1083,6 +1093,8 @@ DoStat_ZoomEnd
 DoStat_ZoomV:
 	push	af
 	push	bc
+	push	de
+	push	hl
 	ld	a,[rLY]
 	cp	144
 	jr	c,.noxora
@@ -1093,6 +1105,8 @@ DoStat_ZoomV:
 	sub	c
 	add	63
 	ld	[rSCY],a
+	pop	hl
+	pop	de
 	pop	bc
 	pop	af
 	reti
@@ -1191,7 +1205,7 @@ HBlankCopy2bpp:
 	ld	a,d
 	ld	[hl+],a
 	pop	de
-	ld	a,e
+	ld	a,e	
 	ld	[hl+],a
 	ld	[hl],d
 	inc	hl
