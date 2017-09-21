@@ -1205,6 +1205,9 @@ HBlankCopy2bpp:
 	ld	a,d
 	ld	[hl+],a
 	pop	de
+	ldh	a,[rSTAT]
+	and	2
+	jr	nz,@-4
 	ld	a,e	
 	ld	[hl+],a
 	ld	[hl],d
