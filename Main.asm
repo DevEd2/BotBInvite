@@ -817,6 +817,7 @@ UpdateScrollerText:
 	ret
 
 ScrollerText:	incbin	"ScrollerText.txt"
+	db	$ff
 
 ; =============
 ; Misc routines
@@ -1017,8 +1018,6 @@ DoVBlank_Logo:
 DoStat:
 	push	af
 	push	bc
-	push	de
-	push	hl
 	ld	a,[rSTAT]
 	and	%00000100
 	jr	z,.notlyc
@@ -1062,8 +1061,6 @@ DoStat:
 	ld	a,c
 	ld	[rBGP],a
 .notlyc
-	pop	hl
-	pop	de
 	pop	bc
 	pop	af
 	reti
@@ -1071,8 +1068,6 @@ DoStatEnd
 
 DoStat_Zoom:
 	push	af
-	push	bc
-	push	de
 	push	hl
 	ld	hl,CurZoomSCY+1
 	ld	a,[hl-]
@@ -1084,8 +1079,6 @@ DoStat_Zoom:
 	dec	[hl]
 .nocarry
 	pop	hl
-	pop	de
-	pop	bc
 	pop	af
 	reti
 DoStat_ZoomEnd
@@ -1093,8 +1086,6 @@ DoStat_ZoomEnd
 DoStat_ZoomV:
 	push	af
 	push	bc
-	push	de
-	push	hl
 	ld	a,[rLY]
 	cp	144
 	jr	c,.noxora
@@ -1105,8 +1096,6 @@ DoStat_ZoomV:
 	sub	c
 	add	63
 	ld	[rSCY],a
-	pop	hl
-	pop	de
 	pop	bc
 	pop	af
 	reti
@@ -1188,7 +1177,7 @@ HBlankCopy2bpp:
 	jr	z,.wait
 .wait2
 	ld	a,[rSTAT]
-	and	2
+	and	3
 	jr	nz,.wait2
 .nowait
 	ld	a,c
@@ -1205,9 +1194,6 @@ HBlankCopy2bpp:
 	ld	a,d
 	ld	[hl+],a
 	pop	de
-	ldh	a,[rSTAT]
-	and	2
-	jr	nz,@-4
 	ld	a,e	
 	ld	[hl+],a
 	ld	[hl],d
