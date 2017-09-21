@@ -494,6 +494,7 @@ IntroAnimLoop1::
 	
 IntroAnimLoop2::
 	halt
+	call	DS_Play
 	ld	a,[hl+]
 	ldh	[rSCY],a
 	cp	$80
@@ -591,8 +592,7 @@ MainLoop::
 	ld	[hl+],a
 	ld	a,e
 	ld	[CurScrollId],a
-	
-	call	DS_Play	; let's hope this works
+	call	DS_Play
 	
 .loop
 	halt
