@@ -206,7 +206,7 @@ AllNoobz_CH1:
 	dw	.block2
 	db	SetLoopPoint
 	
-	rept	7
+;	rept	7
 	db	CallSection
 	dw	.block3
 	db	CallSection
@@ -215,15 +215,16 @@ AllNoobz_CH1:
 	dw	.block3
 	db	CallSection
 	dw	.block5
-	endr
-	db	CallSection
-	dw	.block3
-	db	CallSection
-	dw	.block4
-	db	CallSection
-	dw	.block3
+	db	GotoLoopPoint
+;	endr
+;	db	CallSection
+;	dw	.block3
+;	db	CallSection
+;	dw	.block4
+;	db	CallSection
+;	dw	.block3
 	
-	db	EndChannel
+;	db	EndChannel
 	
 
 .block1
