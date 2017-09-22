@@ -205,8 +205,7 @@ AllNoobz_CH1:
 	db	CallSection
 	dw	.block2
 	db	SetLoopPoint
-	
-;	rept	7
+
 	db	CallSection
 	dw	.block3
 	db	CallSection
@@ -216,15 +215,6 @@ AllNoobz_CH1:
 	db	CallSection
 	dw	.block5
 	db	GotoLoopPoint
-;	endr
-;	db	CallSection
-;	dw	.block3
-;	db	CallSection
-;	dw	.block4
-;	db	CallSection
-;	dw	.block3
-	
-;	db	EndChannel
 	
 
 .block1
@@ -266,33 +256,20 @@ AllNoobz_CH2:
 	db	SetLoopPoint
 	db	CallSection
 	dw	.block2
-	db	F#4,4,F#4,4
-	db	E_4,8,E_4,4,B_3,2,E_4,2,D_4,2,B_3,2,B_3,2,D_4,2,A_3,2
-	db	SetInsAlternate,_ins_Follin,_ins_FollinEcho
-	db	B_3,2,A_3,2,D_4,2
-	db	SetInsAlternate,_ins_FollinEcho,_ins_Follin
-	db	E_4,4,E_4,2,C_4,4,C_4,2,E_4,2,C_4,2
-	db	G_4,2,E_4,2,A_4,2,G_4,2,G_4,2,A_4,2
-	db	F#4,12,F#4,4,D_4,2,F#4,2
-	db	B_3,2,D_4,2,D_4,2,B_3,2,G_4,2,D_4,2,F#4,2,G_4,2
-	db	CallSection
-	dw	.block2
-	db	A_4,4,A_4,4,B_4,8,B_4,4,G_4,2,B_4,2
-	db	B_4,2,G_4,2,G_4,2,B_4,2,E_4,2
-	db	SetInsAlternate,_ins_Follin,_ins_FollinEcho
-	db	G_4,2,E_4,2,B_4,2
-	db	SetInsAlternate,_ins_FollinEcho,_ins_Follin
-	db	C_5,4,C_5,2,G_4,4,G_4,2,E_4,6,E_4,2,C_4,2,E_4,2,E_4,2
-	db	SetInsAlternate,_ins_Follin,_ins_FollinEcho
-	db	G_4,2,E_4,2,D_4,12,D_4,22
-	
 	db	SetInstrument,_ins_LongFade
 	db	CallSection
 	dw	.block3
 	db	A_3,8,G_3,8,F#3,4,G_3,12
 	db	CallSection
 	dw	.block3
-	db	A_3,16,B_3,8,D_3,8
+	db	A_3,16,B_3,8,D_3,8	
+	db	CallSection
+	dw	.block2
+	db	SetInstrument,_ins_LongFadeArp
+	db	E_4,12,F#4,12,G_4,8,E_4,12,G_4,12,F#4,8
+	db	G_4,12,A_4,12,G_4,8,F#4,16,D_4,8,B_3,4,D_4,4
+	db	E_4,12,F#4,12,G_4,8,E_4,12,G_4,12,A_4,8
+	db	B_4,12,G_4,12,B_4,8,A_4,16,F#4,8,D_4,8
 	db	GotoLoopPoint
 	
 .block1
@@ -303,6 +280,25 @@ AllNoobz_CH2:
 .block2
 	db	SetInsAlternate,_ins_FollinEcho,_ins_Follin
 	db	E_4,4,E_4,2,B_3,4,B_3,2,E_4,2,B_3,2,G_4,4,G_4,4
+	db	F#4,4,F#4,4
+	db	E_4,8,E_4,4,B_3,2,E_4,2,D_4,2,B_3,2,B_3,2,D_4,2,A_3,2
+	db	SetInsAlternate,_ins_Follin,_ins_FollinEcho
+	db	B_3,2,A_3,2,D_4,2
+	db	SetInsAlternate,_ins_FollinEcho,_ins_Follin
+	db	E_4,4,E_4,2,C_4,4,C_4,2,E_4,2,C_4,2
+	db	G_4,2,E_4,2,A_4,2,G_4,2,G_4,2,A_4,2
+	db	F#4,12,F#4,4,D_4,2,F#4,2
+	db	B_3,2,D_4,2,D_4,2,B_3,2,G_4,2,D_4,2,F#4,2,G_4,2
+	db	SetInsAlternate,_ins_FollinEcho,_ins_Follin
+	db	E_4,4,E_4,2,B_3,4,B_3,2,E_4,2,B_3,2,G_4,4,G_4,4
+	db	A_4,4,A_4,4,B_4,8,B_4,4,G_4,2,B_4,2
+	db	B_4,2,G_4,2,G_4,2,B_4,2,E_4,2
+	db	SetInsAlternate,_ins_Follin,_ins_FollinEcho
+	db	G_4,2,E_4,2,B_4,2
+	db	SetInsAlternate,_ins_FollinEcho,_ins_Follin
+	db	C_5,4,C_5,2,G_4,4,G_4,2,E_4,6,E_4,2,C_4,2,E_4,2,E_4,2
+	db	SetInsAlternate,_ins_Follin,_ins_FollinEcho
+	db	G_4,2,E_4,2,D_4,12,D_4,22
 	ret
 
 .block3

@@ -792,11 +792,16 @@ UpdateScrollerText:
 	ld	a,[hl+]
 	ld	h,[hl]
 	ld	l,a
-	
+.getchar	
 	ldh	a,[rSTAT]	; wait for VRAM accessibility
 	and	2
 	jr	nz,@-4
 	ld	a,[hl+]
+	cp	$ff
+	jr	nz,.noreset
+	ld	hl,ScrollerText
+	jr	.getchar
+.noreset
 	add	$60
 	ld	[de],a
 	inc	de
