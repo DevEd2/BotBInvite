@@ -123,6 +123,7 @@ wave_Sawtooth:		db	$00,$11,$22,$33,$44,$55,$66,$77,$88,$99,$aa,$bb,$cc,$dd,$ee,$
 waveseq_Default:	db	0,$ff
 waveseq_Pulse:		db	1,$ff
 waveseq_Sawtooth:	db	2,$ff
+waveseq_Buffer:		db	$c0,$ff
 
 ; =================================================================
 ; Instruments

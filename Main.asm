@@ -1010,8 +1010,10 @@ LoadVBlankPointer:
 	ret
 
 DoVBlank:
+	push	af
 	ld	a,1
 	ld	[VBlankFlag],a
+	pop	af
 	reti
 
 DoVBlank_Logo:
