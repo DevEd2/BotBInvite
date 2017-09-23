@@ -1175,7 +1175,9 @@ HBlankCopy2bpp:
 	ld	a,[rLY]
 	; if in line >144 (VBlank), don't wait for stat 0
 	cp	144
-	jr	nc,.nowait
+	jr	c,.wait
+	cp	152
+	jr	c,.nowait
 .wait
 	ld	a,[rSTAT]
 	and	3
@@ -1226,7 +1228,9 @@ HBlankCopy1bpp:
 	ld	a,[rLY]
 	; if in line >144 (VBlank), don't wait for stat 0
 	cp	144
-	jr	nc,.nowait
+	jr	c,.wait
+	cp	152
+	jr	c,.nowait
 .wait
 	ld	a,[rSTAT]
 	and	3
@@ -1298,7 +1302,9 @@ HBlankLoadMap:
 	ld	a,[rLY]
 	; if in line >144 (VBlank), don't wait for stat 0
 	cp	144
-	jr	nc,.nowait
+	jr	c,.wait
+	cp	152
+	jr	c,.nowait
 .wait
 	ld	a,[rSTAT]
 	and	3
