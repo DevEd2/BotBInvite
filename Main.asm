@@ -17,11 +17,14 @@ include	"hardware.inc"
 
 SECTION	"Reset $00",ROM0[$00]
 Reset00:
-	halt
+	xor	a
+	ld	[VBlankFlag],a
+.wait
 	ld	a,[VBlankFlag]
 	and	a
-	jr	z,Reset00
-	ret
+	ret	nz
+	halt
+	jr	.wait
 
 SECTION	"Reset $10",ROM0[$10]
 Reset10:	ret
@@ -862,8 +865,6 @@ _CopyBytes:
 	ret
 	
 DelayFrames:
-	xor	a
-	ld	a,[VBlankFlag]
 	rst	$00
 	dec	b
 	jr	nz,DelayFrames
