@@ -12,7 +12,7 @@ SECTION	"Variables",WRAM0
 ; ================================================================
 
 sys_RNGSeed:			ds	1	; must be at $c000
-EmuCheck:				ds	1	; variable used to determine if we're running in an emulator
+sys_CurrentFrame:		ds	1
 sys_btnPress:			ds	1
 sys_btnHold:			ds	1
 ShowLogo:				ds	1
@@ -24,12 +24,12 @@ CurZoomScale:			ds	1
 CurZoomSCY:				ds	2
 CurZoomPixel:			ds	2
 
-wram_scroller:	macro
+wram_scroller:			macro
 \1:
 \1TablePos:				ds	1
 \1XPos:					ds	1
 \1YPos:					ds	1
-	endm
+endm
 
 ScrollLYCTable:			ds	3
 CurScrollId:			ds	1
@@ -46,6 +46,57 @@ EndScroller:			ds	1
 
 SECTION	"Variables 2",WRAM0[$c100]
 Sprites:				ds  160
+
+wram_star:				macro
+\1YPos					ds	1
+\1XPos					ds	1
+\1Tile					ds	1
+\1Attr					ds	1
+endm
+
+; god what a mess, somebody should clean this up
+; god what a mess, somebody should clean this up
+	wram_star			Star1
+	wram_star			Star2
+	wram_star			Star3
+	wram_star			Star4
+	wram_star			Star5
+	wram_star			Star6
+	wram_star			Star7
+	wram_star			Star8
+	wram_star			Star9
+	wram_star			Star10
+	wram_star			Star11
+	wram_star			Star12
+	wram_star			Star13
+	wram_star			Star14
+	wram_star			Star15
+	wram_star			Star16
+	wram_star			Star17
+	wram_star			Star18
+	wram_star			Star19
+	wram_star			Star20
+	wram_star			Star21
+	wram_star			Star22
+	wram_star			Star23
+	wram_star			Star24
+	wram_star			Star25
+	wram_star			Star26
+	wram_star			Star27
+	wram_star			Star28
+	wram_star			Star29
+	wram_star			Star30
+	wram_star			Star31
+	wram_star			Star32
+	wram_star			Star33
+	wram_star			Star34
+	wram_star			Star35
+	wram_star			Star36
+	wram_star			Star37
+	wram_star			Star38
+	wram_star			Star39
+	wram_star			Star40
+	
 VBlank:					ds  3
 LCDStat:				ds  93	; currently padded to $c200
 	

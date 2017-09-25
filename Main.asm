@@ -464,8 +464,8 @@ ShowScreen1::
 	ld	a,IEF_VBLANK+IEF_LCDC
 	ld	[rIE],a
 	ei
-	CopyTileset			Logo1,0,120
-	CopyTileset			StarTiles,$1000,5
+	CopyTileset			Logo1,$1000,120
+	CopyTileset			StarTiles,0,5
 	CopyTilesetInverted	Font,$800,64
 	Fill				0,Sprites,160
 	call	WaitStat
@@ -480,7 +480,7 @@ ShowScreen1::
 	ldh	[rOBP0],a
 	cpl				; a = 00011011
 	ldh	[rOBP1],a
-	xor	%10001010	; a = 10010001
+	ld	a,%10000011
 	ldh	[rLCDC],a
 	
 IntroAnimLoop1::
@@ -526,6 +526,7 @@ IntroAnimLoop2::
 	ld	[ScrollerPointer],a
 	ld	a,18
 	ld	[ScrollerTextTimer],a
+	call	InitStarfield
 	
 MainLoop::
 	; TODO: Find a place where DevSound can safely be updated.
@@ -594,8 +595,9 @@ MainLoop::
 	ld	a,d
 	ld	[hl+],a
 	ld	a,e
-	ld	[CurScrollId],a
+	ld	[CurScrollId],a	
 	call	DS_Play
+	call	UpdateStarfield
 	
 .loop
 	halt
@@ -827,6 +829,88 @@ UpdateScrollerText:
 ScrollerText:	incbin	"ScrollerText.txt"
 	db	$ff
 
+InitStarfield:
+	ld	b,40
+	ld	hl,Sprites
+.loop
+	; y position
+	call	RandomNumber
+	cp	144
+	jr	nc,.loop
+	ld	[hl+],a
+	; x position
+	;ld	a,168		; may need tweaking
+	call	RandomNumber
+	ld	[hl+],a
+	call	RandomNumber
+	and	3
+	ld	[hl+],a
+	; attributes
+	ld	a,%00010000
+	ld	[hl+],a
+	; loop until done
+	dec	b
+	jr	nz,.loop
+	ret
+	
+UpdateStarfield:
+	ld	b,b
+	ld	b,40
+	ld	hl,Sprites+159	; this routine works backwards
+.loop
+	; attributes
+	dec	hl
+	; tile id
+	ld	a,[hl-]
+	; x position
+	and	a
+	jr	z,.t0
+	dec	a
+	jr	z,.t1
+	dec	a
+	jr	z,.t2
+	dec	a
+	jr	z,.t3
+	jr	.continue
+.t0
+	ld	a,[hl]
+	sub	2
+	ld	[hl],a
+	jr	.continue
+.t1
+	ld	a,[hl]
+	dec	a
+	ld	[hl],a
+	jr	.continue
+.t2
+	ld	a,[sys_CurrentFrame]
+	rra
+	jr	nc,.continue
+	ld	a,[hl]
+	dec	a
+	ld	[hl],a
+	jr	.continue
+.t3
+	ld	a,[sys_CurrentFrame]
+	rra
+	jr	nc,.continue
+	rra
+	jr	nc,.continue
+	ld	a,[hl]
+	dec	a
+	ld	[hl],a
+	jr	.continue
+.continue
+	dec	hl
+	; y position
+	dec	hl
+	dec	b
+	jr	nz,.loop
+	ld	a,[sys_CurrentFrame]
+	inc	a
+	ld	[sys_CurrentFrame],a
+	ret
+	
 ; =============
 ; Misc routines
 ; =============
@@ -1012,13 +1096,14 @@ LoadVBlankPointer:
 
 DoVBlank:
 	push	af
+	call	OAM_DMA
 	ld	a,1
 	ld	[VBlankFlag],a
 	pop	af
 	reti
 
 DoVBlank_Logo:
-	call	OAM_DMA
+;	call	OAM_DMA
 	ld	a,[TempBGP]
 	ld	[rBGP],a
 	jr	DoVBlank
@@ -1379,6 +1464,23 @@ OAM_DMA_:
 	dec	a
 	jr	nz,.wait
 	ret
+	
+RandomNumber:
+	push	hl
+	ld	a,[sys_RNGSeed]
+	inc	a
+	ld	[sys_RNGSeed],a
+	ld	hl,RandTable
+	add	l
+	ld	l,a
+	jr	nc,.nocarry
+	inc	h
+.nocarry
+	ld	a,[hl]
+	pop	hl
+	ret
+	
+RandTable:	incbin	"Rand.bin"
 	
 ; =============
 ; Graphics data
