@@ -876,7 +876,7 @@ InitStarfield:
 .loop
 	; y position
 	call	RandomNumber
-	cp	144
+	cp	160
 	jr	nc,.loop
 	ld	[hl+],a
 	call	RandomNumber
