@@ -111,6 +111,8 @@ ProgramStart:
 	push	af
 	di
 	call	ClearWRAM
+	ld	a,$40
+	ld	[sys_RNGSeed],a	; hack to prevent scroller sometimes glitching out
 	ld	a,RETI_OP	; reti
 	ld	[VBlank],a
 	ld	[LCDStat],a
@@ -1209,7 +1211,7 @@ DoStat_Zoom:
 	ld	[rSCY],a
 	ld	a,[CurZoomScale]
 	add	[hl]
-	ld	[hli],a
+	ld	[hl+],a
 	jr	nc,.nocarry
 	dec	[hl]
 .nocarry
