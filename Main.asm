@@ -854,7 +854,6 @@ InitStarfield:
 	ret
 	
 UpdateStarfield:
-	ld	b,b
 	ld	b,40
 	ld	hl,Sprites+159	; this routine works backwards
 .loop
@@ -1080,6 +1079,11 @@ ScrollerBounceTable:
 	db	44,44,43,43,42,42,41,41,40,39,39,38,37,36,36,35
 	db	34,33,32,31,30,30,29,28,27,26,25,24,23,22,21,19
 	db	18,17,16,15,14,13,12,11, 9, 8, 7, 6, 5, 4, 2, 1
+	
+LogoOscTable:
+	db	0, 0, 0, 0,-1,-1,-1,-1,-2,-2,-2,-2,-3,-3,-3,-3
+	db	-3,-3,-3,-3,-2,-2,-2,-2,-1,-1,-1,-1,0, 0, 0, 0
+	db	$80
 	
 ; ==================
 ; Interrupt routines
