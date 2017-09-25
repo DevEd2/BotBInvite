@@ -111,7 +111,7 @@ ProgramStart:
 	push	af
 	di
 	call	ClearWRAM
-	ld	a,$40
+	ld	a,$5d
 	ld	[sys_RNGSeed],a	; hack to prevent scroller sometimes glitching out
 	ld	a,RETI_OP	; reti
 	ld	[VBlank],a
@@ -876,8 +876,9 @@ InitStarfield:
 .loop
 	; y position
 	call	RandomNumber
-	cp	160
+	cp	144
 	jr	nc,.loop
+	add	$10
 	ld	[hl+],a
 	call	RandomNumber
 	ld	[hl+],a
