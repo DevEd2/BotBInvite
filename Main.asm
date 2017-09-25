@@ -529,8 +529,6 @@ IntroAnimLoop2::
 	call	InitStarfield
 	
 MainLoop::
-	; TODO: Find a place where DevSound can safely be updated.
-	; Either that, or DevSound will need some major optimization...
 	rst	$00			; wait for VBlank
 	xor	a
 	ldh	[rSCX],a
@@ -595,9 +593,10 @@ MainLoop::
 	ld	a,d
 	ld	[hl+],a
 	ld	a,e
-	ld	[CurScrollId],a	
-	call	DS_Play
+	ld	[CurScrollId],a
+
 	call	UpdateStarfield
+	call	DS_Play
 	
 .loop
 	halt
@@ -838,8 +837,6 @@ InitStarfield:
 	cp	144
 	jr	nc,.loop
 	ld	[hl+],a
-	; x position
-	;ld	a,168		; may need tweaking
 	call	RandomNumber
 	ld	[hl+],a
 	call	RandomNumber
@@ -854,6 +851,9 @@ InitStarfield:
 	ret
 	
 UpdateStarfield:
+	push	af
+	push	bc
+	push	hl
 	ld	b,40
 	ld	hl,Sprites+159	; this routine works backwards
 .loop
@@ -908,6 +908,9 @@ UpdateStarfield:
 	ld	a,[sys_CurrentFrame]
 	inc	a
 	ld	[sys_CurrentFrame],a
+	pop	hl
+	pop	bc
+	pop	af
 	ret
 	
 ; =============
