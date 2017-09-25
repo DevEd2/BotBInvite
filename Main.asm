@@ -596,6 +596,47 @@ MainLoop::
 	ld	[CurScrollId],a
 
 	call	UpdateStarfield
+	
+	ld	b,b
+	push	af
+	push	de
+	ld	a,[StarFadeDone]
+	and	a
+	jr	nz,.done
+	ld	a,[sys_CurrentFrame]
+	dec	a
+	cp	56
+	jr	z,.done
+	ld	d,a
+	swap	a
+	and	3
+	bit	3,d
+	jr	z,.noflicker
+	bit	0,d
+	jr	z,.noflicker
+	inc	a
+.noflicker
+	and a
+	ld	b,%11111111
+	jr	z,.gotobp1
+	dec a
+	ld	b,%10111111
+	jr	z,.gotobp1
+	dec a
+	ld	b,%01101111
+	jr	z,.gotobp1
+	ld	b,%00011011
+.gotobp1
+	ld	a,b
+	ldh	[rOBP1],a
+	jr	.skip3
+.done
+	ld	a,1
+	ld	[StarFadeDone],a
+.skip3
+	pop	de
+	pop	af
+	
 	call	DS_Play
 	
 .loop
@@ -604,7 +645,7 @@ MainLoop::
 	and	a
 	jr	nz,.loop	
 	call	UpdateScrollerText
-	jr	MainLoop
+	jp	MainLoop
 
 ; adjust the LYC values so they overlap correctly
 	
