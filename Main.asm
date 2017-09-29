@@ -252,6 +252,10 @@ StartDemo::
 	jr	nz,.copy
 	
 Nintendo2BotB::
+	ld	a,1
+	ld	[DoOAMDMA],a
+
+
 	CopyTileset1BPP	BotB_2x,$200,10
 	CopyBytes	BotBSpriteTable,Sprites,BotBSpriteTableEnd-BotBSpriteTable
 	ld	a,%11111100
@@ -394,6 +398,9 @@ endr
 	call	DelayFrames
 	
 VertStretchBotBLogo::
+	xor	a
+	ld	[DoOAMDMA],a
+
 	ld	a,8
 	ld	[rSCY],a
 	ld	a,STATF_MODE00
@@ -453,6 +460,8 @@ HorizStretchBotBLogo::
 	jr	.loop
 	
 ShowScreen1::
+	ld	a,1
+	ld	[DoOAMDMA],a
 	xor	a
 	ldh	[rSTAT],a
 	dec	a	; = $ff
@@ -871,86 +880,90 @@ ScrollerText:	incbin	"ScrollerText.txt"
 	db	$ff
 
 InitStarfield:
-	ld	b,40
-	ld	hl,Sprites
-.loop
+	ld	b,40					; number of stars to draw
+	ld	hl,Sprites				; location of sprite buffer
+.loop							; repeat for number of stars
 	; y position
-	call	RandomNumber
-	cp	144
-	jr	nc,.loop
-	add	$10
-	ld	[hl+],a
-	call	RandomNumber
-	ld	[hl+],a
-	call	RandomNumber
-	and	3
-	ld	[hl+],a
+	call	RandomNumber		; get a random number
+	cp	144						; check if number > 144
+	jr	nc,.loop				; if it is, reroll
+	add	$10						; add 16 (otherwise star appears offscreen
+	ld	[hl+],a					; store Y position
+	; x position
+	call	RandomNumber		; get random number
+	ld	[hl+],a					; store X position
+	; tile number
+	call	RandomNumber		; get random number
+	and	3						; make sure tile number doesn't exceed 3
+	ld	[hl+],a					; store tile number
 	; attributes
-	ld	a,%00010000
-	ld	[hl+],a
+	ld	a,%00010000				; OBJ palette 1
+	ld	[hl+],a					; store sprite attributes
 	; loop until done
 	dec	b
 	jr	nz,.loop
 	ret
 	
 UpdateStarfield:
+	; preserve registers
 	push	af
 	push	bc
 	push	hl
-	ld	b,40
-	ld	hl,Sprites+159	; this routine works backwards
+	ld	b,40					; number of stars to update
+	ld	hl,Sprites+159			; start at end of sprite buffer and work backwards
 .loop
 	; attributes
-	dec	hl
+	dec	hl						; we don't need to update this
 	; tile id
-	ld	a,[hl-]
+	ld	a,[hl-]					; we need the tile number, so grab it and decrement
 	; x position
-	and	a
-	jr	z,.t0
-	dec	a
-	jr	z,.t1
-	dec	a
-	jr	z,.t2
-	dec	a
-	jr	z,.t3
-	jr	.continue
+	and	a						; is tile number = 0?
+	jr	z,.t0					; if yes, go to .t0
+	dec	a						; is tile number = 1?
+	jr	z,.t1					; if yes, go to .t1
+	dec	a						; is tile number = 2
+	jr	z,.t2					; if yes, go to .t2
+	dec	a						; is tile number = 3?
+	jr	z,.t3					; if yes, go to .t3
+	jr	.continue				; default case: do nothing
 .t0
-	ld	a,[hl]
-	sub	2
-	ld	[hl],a
-	jr	.continue
+	ld	a,[hl]					; get x position
+	sub	2						; subtract 1
+	ld	[hl],a					; store x position
+	jr	.continue				; jump ahead
 .t1
-	ld	a,[hl]
-	dec	a
-	ld	[hl],a
-	jr	.continue
+	ld	a,[hl]					; get x position
+	dec	a						; subtract 1
+	ld	[hl],a					; store x position
+	jr	.continue				; jump ahead
 .t2
-	ld	a,[sys_CurrentFrame]
-	rra
-	jr	nc,.continue
-	ld	a,[hl]
-	dec	a
-	ld	[hl],a
-	jr	.continue
+	ld	a,[sys_CurrentFrame]	; get current frame
+	rra							; divide by 2
+	jr	nc,.continue			; if carry set, skip
+	ld	a,[hl]					; get x position
+	dec	a						; subtract 1
+	ld	[hl],a					; store x position
+	jr	.continue				; jump ahead
 .t3
-	ld	a,[sys_CurrentFrame]
-	rra
-	jr	nc,.continue
-	rra
-	jr	nc,.continue
-	ld	a,[hl]
-	dec	a
-	ld	[hl],a
-	jr	.continue
+	ld	a,[sys_CurrentFrame]	; get current frame
+	rra							; divide by 2
+	jr	nc,.continue			; if carry set, skip
+	rra							; divide by 2 again
+	jr	nc,.continue			; if carry set, skip
+	ld	a,[hl]					; get x position
+	dec	a						; subtract 1
+	ld	[hl],a					; store x position
 .continue
 	dec	hl
 	; y position
-	dec	hl
+	dec	hl						; we don't need to update this
+	; loop until done
 	dec	b
 	jr	nz,.loop
-	ld	a,[sys_CurrentFrame]
-	inc	a
-	ld	[sys_CurrentFrame],a
+	ld	a,[sys_CurrentFrame]	; get current frame
+	inc	a						; add 1
+	ld	[sys_CurrentFrame],a 	; store current frame
+	; restore registers
 	pop	hl
 	pop	bc
 	pop	af
@@ -1141,14 +1154,17 @@ LoadVBlankPointer:
 
 DoVBlank:
 	push	af
+	ld	a,[DoOAMDMA]
+	and	a
+	jr	z,.skip
 	call	OAM_DMA
+.skip
 	ld	a,1
 	ld	[VBlankFlag],a
 	pop	af
 	reti
 
 DoVBlank_Logo:
-;	call	OAM_DMA
 	ld	a,[TempBGP]
 	ld	[rBGP],a
 	jr	DoVBlank

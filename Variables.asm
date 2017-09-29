@@ -44,6 +44,7 @@ Scroll3Delay:			ds	1
 	
 StarFadeDone			ds	1
 LogoOscPos				ds	1
+DoOAMDMA				ds	1
 
 SECTION	"Variables 2",WRAM0[$c100]
 Sprites:				ds  160
