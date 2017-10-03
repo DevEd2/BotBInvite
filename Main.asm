@@ -17,14 +17,12 @@ include	"hardware.inc"
 
 SECTION	"Reset $00",ROM0[$00]
 Reset00:
-	xor	a
-	ld	[VBlankFlag],a
-.wait
+
+	halt
 	ld	a,[VBlankFlag]
 	and	a
-	ret	nz
-	halt
-	jr	.wait
+	jr	z,Reset00
+	ret
 
 SECTION	"Reset $10",ROM0[$10]
 Reset10:	ret
@@ -1007,6 +1005,8 @@ _CopyBytes:
 	ret
 	
 DelayFrames:
+	xor	a
+	ld	a,[VBlankFlag]
 	rst	$00
 	dec	b
 	jr	nz,DelayFrames
@@ -1374,12 +1374,10 @@ HBlankCopy1bpp:
 .loop
 	pop	bc
 	pop	de
-	ld	a,[rLY]
+	ld    a,[rLY]
 	; if in line >144 (VBlank), don't wait for stat 0
-	cp	144
-	jr	c,.wait
-	cp	152
-	jr	c,.nowait
+	cp    144
+	jr    nc,.nowait
 .wait
 	ld	a,[rSTAT]
 	and	3
